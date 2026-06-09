@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
+import { isAdminAuthenticated, setAdminAuthenticated, clearAdminAuth } from '../lib/adminAuth'
 import type { CasoSoporte, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
@@ -20,7 +21,7 @@ interface Stats {
 }
 
 export default function Admin() {
-  const [authenticated, setAuthenticated] = useState(false)
+  const [authenticated, setAuthenticated] = useState(isAdminAuthenticated)
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState(false)
 
@@ -100,6 +101,7 @@ export default function Admin() {
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     if (password === ADMIN_PASSWORD) {
+      setAdminAuthenticated()
       setAuthenticated(true)
       setAuthError(false)
     } else {
@@ -287,7 +289,7 @@ export default function Admin() {
           <p className="text-slate-500 text-sm mt-1">Gestión de casos — Dirección Financiera</p>
         </div>
         <button
-          onClick={() => setAuthenticated(false)}
+          onClick={() => { clearAdminAuth(); setAuthenticated(false) }}
           className="text-sm text-slate-500 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
         >
           Cerrar sesión

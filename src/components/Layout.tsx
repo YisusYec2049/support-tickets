@@ -30,8 +30,11 @@ export default function Layout() {
             <NavLink to="/mis-casos" className={linkClass}>
               Mis Casos
             </NavLink>
-            <NavLink to="/admin" className={linkClass}>
+            <NavLink to="/admin" className={linkClass} end>
               Administración
+            </NavLink>
+            <NavLink to="/admin/consolidados" className={linkClass}>
+              Consolidados
             </NavLink>
           </nav>
         </div>

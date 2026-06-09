@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import MisCasos from './pages/MisCasos'
 import Admin from './pages/Admin'
+import AdminConsolidados from './pages/AdminConsolidados'
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/mis-casos" element={<MisCasos />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/consolidados" element={<AdminConsolidados />} />
         </Route>
       </Routes>
     </BrowserRouter>
