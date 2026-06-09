@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import { isAdminAuthenticated, setAdminAuthenticated, clearAdminAuth } from '../lib/adminAuth'
 import { useNavigate } from 'react-router-dom'
@@ -11,7 +12,20 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
 }
 
-function exportCSV(casos: CasoSoporte[], desde: string, hasta: string) {
+function filas(casos: CasoSoporte[]) {
+  return casos.map((c) => ({
+    'N° Caso': c.caso_numero,
+    Nombre: c.nombre,
+    Correo: c.correo,
+    'Tipo Inscripción': c.tipo_usuario,
+    'N° Inscripción': c.numero_id,
+    Descripción: c.descripcion,
+    Estado: c.estado,
+    Fecha: formatDate(c.created_at),
+  }))
+}
+
+function exportCSV(casos: CasoSoporte[], desde: string, hasta: string, estado: string) {
   const headers = ['N° Caso', 'Nombre', 'Correo', 'Tipo Inscripción', 'N° Inscripción', 'Descripción', 'Estado', 'Fecha']
   const rows = casos.map((c) => [
     c.caso_numero,
@@ -28,10 +42,32 @@ function exportCSV(casos: CasoSoporte[], desde: string, hasta: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `consolidado_${desde}_${hasta}.csv`
+  a.download = `consolidado_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
+
+function exportExcel(casos: CasoSoporte[], desde: string, hasta: string, estado: string) {
+  const ws = XLSX.utils.json_to_sheet(filas(casos))
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Consolidado')
+
+  // Ajustar ancho de columnas automáticamente
+  const colWidths = [
+    { wch: 14 }, { wch: 28 }, { wch: 30 }, { wch: 18 },
+    { wch: 16 }, { wch: 40 }, { wch: 12 }, { wch: 14 },
+  ]
+  ws['!cols'] = colWidths
+
+  XLSX.writeFile(wb, `consolidado_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}.xlsx`)
+}
+
+const ESTADOS = [
+  { value: 'todos', label: 'Todos' },
+  { value: 'pendiente', label: 'Pendiente' },
+  { value: 'proceso', label: 'En Proceso' },
+  { value: 'resuelto', label: 'Resuelto' },
+]
 
 export default function AdminConsolidados() {
   const navigate = useNavigate()
@@ -41,11 +77,11 @@ export default function AdminConsolidados() {
 
   const today = new Date().toISOString().slice(0, 10)
   const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-    .toISOString()
-    .slice(0, 10)
+    .toISOString().slice(0, 10)
 
   const [desde, setDesde] = useState(firstOfMonth)
   const [hasta, setHasta] = useState(today)
+  const [filtroEstado, setFiltroEstado] = useState('todos')
   const [casos, setCasos] = useState<CasoSoporte[]>([])
   const [loading, setLoading] = useState(false)
   const [generado, setGenerado] = useState(false)
@@ -66,12 +102,18 @@ export default function AdminConsolidados() {
     setLoading(true)
     setGenerado(false)
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('casos_soporte')
         .select('*')
         .gte('created_at', `${desde}T00:00:00`)
         .lte('created_at', `${hasta}T23:59:59`)
         .order('created_at', { ascending: false })
+
+      if (filtroEstado !== 'todos') {
+        query = query.eq('estado', filtroEstado)
+      }
+
+      const { data, error } = await query
       if (error) throw error
       setCasos(data ?? [])
       setGenerado(true)
@@ -80,7 +122,6 @@ export default function AdminConsolidados() {
     }
   }
 
-  // Stats derivadas
   const total = casos.length
   const porEstado = {
     pendiente: casos.filter((c) => c.estado === 'pendiente').length,
@@ -146,39 +187,55 @@ export default function AdminConsolidados() {
         </div>
       </div>
 
-      {/* Filtro de fechas */}
+      {/* Filtros */}
       <form
         onSubmit={generar}
-        className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8 flex flex-col sm:flex-row items-end gap-4"
+        className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8"
       >
-        <div className="flex-1">
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-            Desde
-          </label>
-          <input
-            type="date"
-            value={desde}
-            onChange={(e) => setDesde(e.target.value)}
-            required
-            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-        </div>
-        <div className="flex-1">
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-            Hasta
-          </label>
-          <input
-            type="date"
-            value={hasta}
-            onChange={(e) => setHasta(e.target.value)}
-            required
-            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+              Desde
+            </label>
+            <input
+              type="date"
+              value={desde}
+              onChange={(e) => setDesde(e.target.value)}
+              required
+              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+              Hasta
+            </label>
+            <input
+              type="date"
+              value={hasta}
+              onChange={(e) => setHasta(e.target.value)}
+              required
+              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+              Estado
+            </label>
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            >
+              {ESTADOS.map((e) => (
+                <option key={e.value} value={e.value}>{e.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2.5 bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap"
+          className="w-full sm:w-auto px-6 py-2.5 bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 text-white text-sm font-semibold rounded-lg transition-colors"
         >
           {loading ? 'Generando...' : 'Generar reporte'}
         </button>
@@ -189,7 +246,7 @@ export default function AdminConsolidados() {
         <>
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <div className="bg-brand-700 text-white rounded-xl p-5 shadow-sm sm:col-span-1">
+            <div className="bg-brand-700 text-white rounded-xl p-5 shadow-sm">
               <div className="text-3xl font-bold">{total}</div>
               <div className="text-sm font-medium opacity-90 mt-1">Total</div>
             </div>
@@ -207,7 +264,7 @@ export default function AdminConsolidados() {
             </div>
           </div>
 
-          {/* Por tipo de inscripción */}
+          {/* Por tipo */}
           {Object.keys(porTipo).length > 0 && (
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
               <h3 className="text-sm font-semibold text-slate-700 mb-3">Por tipo de inscripción</h3>
@@ -222,56 +279,70 @@ export default function AdminConsolidados() {
             </div>
           )}
 
-          {/* Tabla + exportar */}
+          {/* Tabla */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
               <span className="text-sm font-semibold text-slate-700">
-                {total} caso{total !== 1 ? 's' : ''} en el período {formatDate(desde + 'T12:00:00')} — {formatDate(hasta + 'T12:00:00')}
+                {total} caso{total !== 1 ? 's' : ''} · {formatDate(desde + 'T12:00:00')} — {formatDate(hasta + 'T12:00:00')}
+                {filtroEstado !== 'todos' && (
+                  <span className="ml-2 text-brand-600">· {ESTADOS.find(e => e.value === filtroEstado)?.label}</span>
+                )}
               </span>
               {total > 0 && (
-                <button
-                  onClick={() => exportCSV(casos, desde, hasta)}
-                  className="flex items-center gap-2 px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  Exportar CSV
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => exportCSV(casos, desde, hasta, filtroEstado)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    CSV
+                  </button>
+                  <button
+                    onClick={() => exportExcel(casos, desde, hasta, filtroEstado)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Excel
+                  </button>
+                </div>
               )}
             </div>
 
             {total === 0 ? (
               <p className="text-center text-slate-400 text-sm py-12">
-                No se encontraron casos en este rango de fechas.
+                No se encontraron casos con estos filtros.
               </p>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    {['N° Caso', 'Nombre', 'Correo', 'Tipo', 'N° Inscripción', 'Estado', 'Fecha'].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {casos.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-brand-700">{c.caso_numero}</td>
-                      <td className="px-4 py-3 text-slate-800">{c.nombre}</td>
-                      <td className="px-4 py-3 text-slate-600">{c.correo}</td>
-                      <td className="px-4 py-3 text-slate-600">{c.tipo_usuario}</td>
-                      <td className="px-4 py-3 text-slate-600">{c.numero_id}</td>
-                      <td className="px-4 py-3"><EstadoBadge estado={c.estado} /></td>
-                      <td className="px-4 py-3 text-slate-400 text-xs">{formatDate(c.created_at)}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      {['N° Caso', 'Nombre', 'Correo', 'Tipo', 'N° Inscripción', 'Estado', 'Fecha'].map((h) => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wide whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {casos.map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-brand-700 whitespace-nowrap">{c.caso_numero}</td>
+                        <td className="px-4 py-3 text-slate-800">{c.nombre}</td>
+                        <td className="px-4 py-3 text-slate-600">{c.correo}</td>
+                        <td className="px-4 py-3 text-slate-600">{c.tipo_usuario}</td>
+                        <td className="px-4 py-3 text-slate-600">{c.numero_id}</td>
+                        <td className="px-4 py-3"><EstadoBadge estado={c.estado} /></td>
+                        <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{formatDate(c.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </>
