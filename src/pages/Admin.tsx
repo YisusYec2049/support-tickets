@@ -275,11 +275,11 @@ export default function Admin() {
               <span className="font-medium">{selectedCaso.nombre}</span>
             </div>
             <div>
-              <span className="text-slate-500">Tipo:</span>{' '}
+              <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
               <span className="font-medium">{selectedCaso.tipo_usuario}</span>
             </div>
             <div>
-              <span className="text-slate-500">ID del caso:</span>{' '}
+              <span className="text-slate-500">N° Inscripción:</span>{' '}
               <span className="font-medium">{selectedCaso.numero_id}</span>
             </div>
             <div>

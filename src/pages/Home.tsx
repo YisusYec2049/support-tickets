@@ -116,7 +116,7 @@ export default function Home() {
         {/* Nombre */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Nombre completo <span className="text-red-500">*</span>
+            Nombre Completo de quien solicita Soporte <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -129,10 +129,26 @@ export default function Home() {
           />
         </div>
 
-        {/* Tipo usuario */}
+        {/* Correo */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Tipo de usuario <span className="text-red-500">*</span>
+            Correo electrónico <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            name="correo"
+            value={form.correo}
+            onChange={handleChange}
+            required
+            placeholder="usuario@ejemplo.com"
+            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Tipo de inscripción */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Tipo de Inscripción <span className="text-red-500">*</span>
           </label>
           <select
             name="tipo_usuario"
@@ -150,37 +166,20 @@ export default function Home() {
           </select>
         </div>
 
-        {/* Número ID + Correo */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              ID del caso <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="numero_id"
-              value={form.numero_id}
-              onChange={handleChange}
-              required
-              placeholder="Ej. #356"
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Correo electrónico <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              name="correo"
-              value={form.correo}
-              onChange={handleChange}
-              required
-              placeholder="usuario@ejemplo.com"
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-            />
-          </div>
+        {/* Número de inscripción */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Número de Inscripción <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="numero_id"
+            value={form.numero_id}
+            onChange={handleChange}
+            required
+            placeholder="Ej. #356"
+            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
         </div>
 
         {/* Descripción */}
