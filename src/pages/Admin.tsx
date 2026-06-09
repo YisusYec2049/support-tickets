@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { playNotification } from '../lib/sound'
 import type { CasoSoporte, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
@@ -30,11 +32,20 @@ export default function Admin() {
   const [mensajes, setMensajes] = useState<MensajeCaso[]>([])
   const [loadingMensajes, setLoadingMensajes] = useState(false)
   const [adminMsg, setAdminMsg] = useState('')
+  const [nuevoEstado, setNuevoEstado] = useState<'proceso' | 'resuelto'>('proceso')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
 
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
   const [refreshing, setRefreshing] = useState(false)
+
+  const channelRef = useRef<RealtimeChannel | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (channelRef.current) supabase.removeChannel(channelRef.current)
+    }
+  }, [])
 
   const cargarCasos = useCallback(async () => {
     setLoading(true)
@@ -96,10 +107,47 @@ export default function Admin() {
     }
   }
 
+  function cancelarSuscripcion() {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current)
+      channelRef.current = null
+    }
+  }
+
+  function suscribirACaso(caso: CasoSoporte) {
+    cancelarSuscripcion()
+    const channel = supabase
+      .channel(`admin-caso-${caso.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'mensajes_casos', filter: `caso_id=eq.${caso.id}` },
+        (payload) => {
+          const nuevo = payload.new as MensajeCaso
+          if (nuevo.autor === 'usuario') playNotification()
+          setMensajes((prev) => {
+            if (prev.find((m) => m.id === nuevo.id)) return prev
+            return [...prev, nuevo]
+          })
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'casos_soporte', filter: `id=eq.${caso.id}` },
+        (payload) => {
+          const updated = payload.new as CasoSoporte
+          setSelectedCaso(updated)
+          setCasos((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+        },
+      )
+      .subscribe()
+    channelRef.current = channel
+  }
+
   async function abrirCaso(caso: CasoSoporte) {
     setSelectedCaso(caso)
     setMensajes([])
     setAdminMsg('')
+    setNuevoEstado('proceso')
     setSendError(null)
     setLoadingMensajes(true)
 
@@ -127,6 +175,7 @@ export default function Admin() {
         .order('created_at', { ascending: true })
       if (msgErr) throw msgErr
       setMensajes(data ?? [])
+      suscribirACaso(caso)
     } finally {
       setLoadingMensajes(false)
     }
@@ -155,10 +204,10 @@ export default function Admin() {
         .order('created_at', { ascending: true })
       setMensajes(msgs ?? [])
 
-      // 3. Intentar cerrar el caso (best-effort, no bloquea si falla)
+      // 3. Actualizar estado según lo que eligió el admin
       const { data: updated, error: updateErr } = await supabase
         .from('casos_soporte')
-        .update({ estado: 'resuelto', updated_at: new Date().toISOString() })
+        .update({ estado: nuevoEstado, updated_at: new Date().toISOString() })
         .eq('id', selectedCaso.id)
         .select()
         .single()
@@ -166,11 +215,21 @@ export default function Admin() {
       if (!updateErr && updated) {
         setSelectedCaso(updated)
         setCasos((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
-        setStats((s) => ({ ...s, proceso: s.proceso - 1, cerrado: s.cerrado + 1 }))  // 'cerrado' es el contador local, el valor en DB es 'resuelto'
+        setStats((s) => {
+          const eraResuelto = selectedCaso.estado === 'resuelto'
+          const eraProceso = selectedCaso.estado === 'proceso'
+          const eraPendiente = selectedCaso.estado === 'pendiente'
+          const ahora = nuevoEstado
+          return {
+            ...s,
+            pendiente: s.pendiente - (eraPendiente ? 1 : 0),
+            proceso: s.proceso - (eraProceso ? 1 : 0) + (ahora === 'proceso' ? 1 : 0),
+            cerrado: s.cerrado - (eraResuelto ? 1 : 0) + (ahora === 'resuelto' ? 1 : 0),
+          }
+        })
       } else if (updateErr) {
-        // El mensaje se envió, pero el estado no se pudo actualizar
         console.warn('No se pudo actualizar el estado:', updateErr.message)
-        setSendError(`Mensaje enviado, pero el estado no se pudo cerrar: ${updateErr.message}`)
+        setSendError(`Mensaje enviado, pero el estado no se pudo actualizar: ${updateErr.message}`)
       }
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message ?? JSON.stringify(err)
@@ -261,7 +320,7 @@ export default function Admin() {
               </span>
             </div>
             <button
-              onClick={() => setSelectedCaso(null)}
+              onClick={() => { cancelarSuscripcion(); setSelectedCaso(null) }}
               className="text-blue-200 hover:text-white text-sm"
             >
               ← Volver a la lista
@@ -302,28 +361,66 @@ export default function Admin() {
             {loadingMensajes ? (
               <p className="text-slate-400 text-sm text-center py-6">Cargando...</p>
             ) : (
-              <MensajeThread mensajes={mensajes} />
+              <MensajeThread mensajes={mensajes} perspectiva="admin" />
             )}
           </div>
 
-          {/* Reply form (only if not closed) */}
+          {/* Reply form (only if not resolved) */}
           {selectedCaso.estado !== 'resuelto' ? (
-            <form onSubmit={enviarMensajeAdmin} className="px-6 pb-6 flex flex-col gap-3">
+            <form onSubmit={enviarMensajeAdmin} className="px-6 pb-6 flex flex-col gap-4">
               <textarea
                 value={adminMsg}
                 onChange={(e) => setAdminMsg(e.target.value)}
                 rows={3}
                 required
-                placeholder="Escribe la respuesta al estudiante (enviará y cerrará el caso)..."
+                placeholder="Escribe la respuesta..."
                 className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
               />
+
+              {/* Estado selector */}
+              <div className="flex items-center gap-6">
+                <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                  Actualizar estado:
+                </span>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="nuevoEstado"
+                    value="proceso"
+                    checked={nuevoEstado === 'proceso'}
+                    onChange={() => setNuevoEstado('proceso')}
+                    className="accent-blue-600"
+                  />
+                  <span className="text-sm font-medium text-blue-700">En Proceso</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="nuevoEstado"
+                    value="resuelto"
+                    checked={nuevoEstado === 'resuelto'}
+                    onChange={() => setNuevoEstado('resuelto')}
+                    className="accent-green-600"
+                  />
+                  <span className="text-sm font-medium text-green-700">Resuelto</span>
+                </label>
+              </div>
+
               {sendError && <p className="text-red-600 text-xs">{sendError}</p>}
               <button
                 type="submit"
                 disabled={sending}
-                className="self-end px-5 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-sm font-semibold rounded-lg transition-colors"
+                className={`self-end px-5 py-2 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 ${
+                  nuevoEstado === 'resuelto'
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
               >
-                {sending ? 'Enviando...' : 'Responder y Cerrar Caso'}
+                {sending
+                  ? 'Enviando...'
+                  : nuevoEstado === 'resuelto'
+                  ? 'Responder y Resolver Caso'
+                  : 'Responder'}
               </button>
             </form>
           ) : (

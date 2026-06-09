@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { playNotification } from '../lib/sound'
 import type { CasoSoporte, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
@@ -70,7 +71,9 @@ export default function MisCasos() {
           filter: `caso_id=eq.${caso.id}`,
         },
         (payload) => {
-          setMensajes((prev) => [...prev, payload.new as MensajeCaso])
+          const nuevo = payload.new as MensajeCaso
+          if (nuevo.autor === 'admin') playNotification()
+          setMensajes((prev) => [...prev, nuevo])
         },
       )
       .subscribe()
