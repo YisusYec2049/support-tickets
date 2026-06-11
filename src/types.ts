@@ -5,6 +5,7 @@ export interface CasoSoporte {
   tipo_usuario: string
   numero_id: string
   correo: string
+  tipo_soporte: string
   descripcion: string
   estado: 'pendiente' | 'proceso' | 'resuelto'
   created_at: string

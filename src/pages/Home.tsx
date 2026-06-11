@@ -6,11 +6,23 @@ const TIPOS_USUARIO = [
   'Individual',
 ]
 
+const TIPOS_SOPORTE = [
+  'Inscripciones',
+  'Comprobantes de Ingreso',
+  'Acuerdo de pago',
+  'Ordenes de Trabajo',
+  'Comprobante de Egreso',
+  'Conciliaciones Bancarias',
+  'Reportes',
+  'Otros',
+]
+
 interface FormData {
   nombre: string
   tipo_usuario: string
   numero_id: string
   correo: string
+  tipo_soporte: string
   descripcion: string
 }
 
@@ -19,6 +31,7 @@ const EMPTY: FormData = {
   tipo_usuario: '',
   numero_id: '',
   correo: '',
+  tipo_soporte: '',
   descripcion: '',
 }
 
@@ -55,6 +68,7 @@ export default function Home() {
         tipo_usuario: form.tipo_usuario,
         numero_id: form.numero_id,
         correo: form.correo.toLowerCase().trim(),
+        tipo_soporte: form.tipo_soporte,
         descripcion: form.descripcion,
         estado: 'pendiente',
       })
@@ -145,20 +159,27 @@ export default function Home() {
           />
         </div>
 
-        {/* Tipo de inscripción */}
+        {/* Tipo de soporte */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Tipo de Inscripción <span className="text-red-500">*</span>
+            Tipo de Soporte <span className="text-red-500">*</span>
           </label>
           <select
-            name="tipo_usuario"
-            value={form.tipo_usuario}
-            onChange={handleChange}
+            name="tipo_soporte"
+            value={form.tipo_soporte}
+            onChange={(e) => {
+              const val = e.target.value
+              setForm((f) => ({
+                ...f,
+                tipo_soporte: val,
+                tipo_usuario: val !== 'Inscripciones' ? '' : f.tipo_usuario,
+              }))
+            }}
             required
             className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
           >
             <option value="">Seleccionar...</option>
-            {TIPOS_USUARIO.map((t) => (
+            {TIPOS_SOPORTE.map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>
@@ -166,10 +187,33 @@ export default function Home() {
           </select>
         </div>
 
-        {/* Número de inscripción */}
+        {/* Tipo de inscripción — solo visible si tipo_soporte es Inscripciones */}
+        {form.tipo_soporte === 'Inscripciones' && (
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              Tipo de Inscripción <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="tipo_usuario"
+              value={form.tipo_usuario}
+              onChange={handleChange}
+              required
+              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
+            >
+              <option value="">Seleccionar...</option>
+              {TIPOS_USUARIO.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* ID */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Número de Inscripción <span className="text-red-500">*</span>
+            ID <span className="text-red-500">*</span>
           </label>
           <input
             type="text"

@@ -344,6 +344,10 @@ export default function Admin() {
               <span className="font-medium">{selectedCaso.numero_id}</span>
             </div>
             <div>
+              <span className="text-slate-500">Tipo de Soporte:</span>{' '}
+              <span className="font-medium">{selectedCaso.tipo_soporte}</span>
+            </div>
+            <div>
               <span className="text-slate-500">Correo:</span>{' '}
               <span className="font-medium">{selectedCaso.correo}</span>
             </div>

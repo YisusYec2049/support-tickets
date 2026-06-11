@@ -19,6 +19,7 @@ function filas(casos: CasoSoporte[]) {
     Correo: c.correo,
     'Tipo Inscripción': c.tipo_usuario,
     'N° Inscripción': c.numero_id,
+    'Tipo de Soporte': c.tipo_soporte,
     Descripción: c.descripcion,
     Estado: c.estado,
     Fecha: formatDate(c.created_at),
@@ -26,13 +27,14 @@ function filas(casos: CasoSoporte[]) {
 }
 
 function exportCSV(casos: CasoSoporte[], desde: string, hasta: string, estado: string) {
-  const headers = ['N° Caso', 'Nombre', 'Correo', 'Tipo Inscripción', 'N° Inscripción', 'Descripción', 'Estado', 'Fecha']
+  const headers = ['N° Caso', 'Nombre', 'Correo', 'Tipo Inscripción', 'N° Inscripción', 'Tipo de Soporte', 'Descripción', 'Estado', 'Fecha']
   const rows = casos.map((c) => [
     c.caso_numero,
     c.nombre,
     c.correo,
     c.tipo_usuario,
     c.numero_id,
+    c.tipo_soporte,
     `"${c.descripcion.replace(/"/g, '""')}"`,
     c.estado,
     formatDate(c.created_at),
@@ -55,7 +57,7 @@ function exportExcel(casos: CasoSoporte[], desde: string, hasta: string, estado:
   // Ajustar ancho de columnas automáticamente
   const colWidths = [
     { wch: 14 }, { wch: 28 }, { wch: 30 }, { wch: 18 },
-    { wch: 16 }, { wch: 40 }, { wch: 12 }, { wch: 14 },
+    { wch: 16 }, { wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 14 },
   ]
   ws['!cols'] = colWidths
 
@@ -67,6 +69,17 @@ const ESTADOS = [
   { value: 'pendiente', label: 'Pendiente' },
   { value: 'proceso', label: 'En Proceso' },
   { value: 'resuelto', label: 'Resuelto' },
+]
+
+const TIPOS_SOPORTE = [
+  'Inscripciones',
+  'Comprobantes de Ingreso',
+  'Acuerdo de pago',
+  'Ordenes de Trabajo',
+  'Comprobante de Egreso',
+  'Conciliaciones Bancarias',
+  'Reportes',
+  'Otros',
 ]
 
 export default function AdminConsolidados() {
@@ -82,6 +95,7 @@ export default function AdminConsolidados() {
   const [desde, setDesde] = useState(firstOfMonth)
   const [hasta, setHasta] = useState(today)
   const [filtroEstado, setFiltroEstado] = useState('todos')
+  const [filtroTipoSoporte, setFiltroTipoSoporte] = useState('todos')
   const [casos, setCasos] = useState<CasoSoporte[]>([])
   const [loading, setLoading] = useState(false)
   const [generado, setGenerado] = useState(false)
@@ -111,6 +125,9 @@ export default function AdminConsolidados() {
 
       if (filtroEstado !== 'todos') {
         query = query.eq('estado', filtroEstado)
+      }
+      if (filtroTipoSoporte !== 'todos') {
+        query = query.eq('tipo_soporte', filtroTipoSoporte)
       }
 
       const { data, error } = await query
@@ -192,7 +209,7 @@ export default function AdminConsolidados() {
         onSubmit={generar}
         className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8"
       >
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
               Desde
@@ -228,6 +245,21 @@ export default function AdminConsolidados() {
             >
               {ESTADOS.map((e) => (
                 <option key={e.value} value={e.value}>{e.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+              Tipo de Soporte
+            </label>
+            <select
+              value={filtroTipoSoporte}
+              onChange={(e) => setFiltroTipoSoporte(e.target.value)}
+              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            >
+              <option value="todos">Todos</option>
+              {TIPOS_SOPORTE.map((t) => (
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
@@ -287,6 +319,9 @@ export default function AdminConsolidados() {
                 {filtroEstado !== 'todos' && (
                   <span className="ml-2 text-brand-600">· {ESTADOS.find(e => e.value === filtroEstado)?.label}</span>
                 )}
+                {filtroTipoSoporte !== 'todos' && (
+                  <span className="ml-2 text-brand-600">· {filtroTipoSoporte}</span>
+                )}
               </span>
               {total > 0 && (
                 <div className="flex gap-2">
@@ -321,7 +356,7 @@ export default function AdminConsolidados() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      {['N° Caso', 'Nombre', 'Correo', 'Tipo', 'N° Inscripción', 'Estado', 'Fecha'].map((h) => (
+                      {['N° Caso', 'Nombre', 'Correo', 'Tipo', 'N° Inscripción', 'Tipo de Soporte', 'Estado', 'Fecha'].map((h) => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wide whitespace-nowrap">
                           {h}
                         </th>
@@ -336,6 +371,7 @@ export default function AdminConsolidados() {
                         <td className="px-4 py-3 text-slate-600">{c.correo}</td>
                         <td className="px-4 py-3 text-slate-600">{c.tipo_usuario}</td>
                         <td className="px-4 py-3 text-slate-600">{c.numero_id}</td>
+                        <td className="px-4 py-3 text-slate-600">{c.tipo_soporte}</td>
                         <td className="px-4 py-3"><EstadoBadge estado={c.estado} /></td>
                         <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{formatDate(c.created_at)}</td>
                       </tr>
