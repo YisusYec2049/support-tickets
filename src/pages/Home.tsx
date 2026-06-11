@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const TIPOS_USUARIO = [
@@ -53,6 +53,7 @@ export default function Home() {
   const [casoCreado, setCasoCreado] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -269,17 +270,28 @@ export default function Home() {
             Adjunto <span className="text-slate-400 font-normal">(opcional)</span>
           </label>
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/*"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
           />
           {file && (
-            <img
-              src={URL.createObjectURL(file)}
-              alt="Vista previa"
-              className="mt-3 max-h-48 rounded-lg border border-slate-200 object-contain"
-            />
+            <div className="relative inline-block mt-3">
+              <img
+                src={URL.createObjectURL(file)}
+                alt="Vista previa"
+                className="max-h-48 rounded-lg border border-slate-200 object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
+                className="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow transition-colors"
+                title="Quitar imagen"
+              >
+                ✕
+              </button>
+            </div>
           )}
         </div>
 
