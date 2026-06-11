@@ -235,6 +235,15 @@ export default function MisCasos() {
           <div className="px-6 py-4 border-b border-slate-100 text-sm text-slate-600">
             <span className="font-medium text-slate-800">{selectedCaso.descripcion}</span>
             <span className="ml-4 text-slate-400">{formatDate(selectedCaso.created_at)}</span>
+            {selectedCaso.adjunto_url && (
+              <a href={selectedCaso.adjunto_url} target="_blank" rel="noopener noreferrer">
+                <img
+                  src={selectedCaso.adjunto_url}
+                  alt="Adjunto"
+                  className="mt-3 max-h-48 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity"
+                />
+              </a>
+            )}
           </div>
 
           <div className="px-6 py-5">

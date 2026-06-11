@@ -359,6 +359,18 @@ export default function Admin() {
               <span className="text-slate-500">Fecha:</span>{' '}
               <span className="font-medium">{formatDate(selectedCaso.created_at)}</span>
             </div>
+            {selectedCaso.adjunto_url && (
+              <div className="sm:col-span-2">
+                <span className="text-slate-500 block mb-2">Adjunto:</span>
+                <a href={selectedCaso.adjunto_url} target="_blank" rel="noopener noreferrer">
+                  <img
+                    src={selectedCaso.adjunto_url}
+                    alt="Adjunto"
+                    className="max-h-64 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity"
+                  />
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Messages */}

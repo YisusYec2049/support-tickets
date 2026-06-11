@@ -10,6 +10,7 @@ export interface CasoSoporte {
   estado: 'pendiente' | 'proceso' | 'resuelto'
   created_at: string
   updated_at: string
+  adjunto_url?: string | null
 }
 
 export interface MensajeCaso {

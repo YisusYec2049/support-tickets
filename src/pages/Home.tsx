@@ -52,6 +52,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [casoCreado, setCasoCreado] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -64,6 +65,18 @@ export default function Home() {
     setError(null)
     setLoading(true)
     try {
+      let adjunto_url: string | null = null
+      if (file) {
+        const ext = file.name.split('.').pop()
+        const fileName = `${Date.now()}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('attachments')
+          .upload(fileName, file)
+        if (uploadError) throw uploadError
+        const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(fileName)
+        adjunto_url = urlData.publicUrl
+      }
+
       const caso_numero = await generarCasoNumero()
       const { error: insertError } = await supabase.from('casos_soporte').insert({
         caso_numero,
@@ -74,10 +87,12 @@ export default function Home() {
         tipo_soporte: form.tipo_soporte,
         descripcion: form.descripcion,
         estado: 'pendiente',
+        adjunto_url,
       })
       if (insertError) throw insertError
       setCasoCreado(caso_numero)
       setForm(EMPTY)
+      setFile(null)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al crear el caso. Intenta de nuevo.')
     } finally {
@@ -246,6 +261,26 @@ export default function Home() {
             placeholder="Describe detalladamente tu solicitud o inconveniente..."
             className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-y"
           />
+        </div>
+
+        {/* Adjunto */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Adjunto <span className="text-slate-400 font-normal">(opcional)</span>
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+          />
+          {file && (
+            <img
+              src={URL.createObjectURL(file)}
+              alt="Vista previa"
+              className="mt-3 max-h-48 rounded-lg border border-slate-200 object-contain"
+            />
+          )}
         </div>
 
         {error && (
