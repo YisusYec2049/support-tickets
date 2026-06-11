@@ -14,6 +14,7 @@ const TIPOS_SOPORTE = [
   'Comprobante de Egreso',
   'Conciliaciones Bancarias',
   'Reportes',
+  'Link de Pago',
   'Otros',
 ]
 
