@@ -6,6 +6,8 @@ const TIPOS_USUARIO = [
   'Individual',
 ]
 
+const SIN_ID = ['Conciliaciones Bancarias', 'Reportes', 'Link de Pago']
+
 const TIPOS_SOPORTE = [
   'Inscripciones',
   'Comprobantes de Ingreso',
@@ -174,6 +176,7 @@ export default function Home() {
                 ...f,
                 tipo_soporte: val,
                 tipo_usuario: val !== 'Inscripciones' ? '' : f.tipo_usuario,
+                numero_id: SIN_ID.includes(val) ? '' : f.numero_id,
               }))
             }}
             required
@@ -212,20 +215,22 @@ export default function Home() {
         )}
 
         {/* ID */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            ID <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="numero_id"
-            value={form.numero_id}
-            onChange={handleChange}
-            required
-            placeholder="Ej. #356"
-            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-          />
-        </div>
+        {!SIN_ID.includes(form.tipo_soporte) && (
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              ID <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="numero_id"
+              value={form.numero_id}
+              onChange={handleChange}
+              required
+              placeholder="Ej. #356"
+              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            />
+          </div>
+        )}
 
         {/* Descripción */}
         <div>

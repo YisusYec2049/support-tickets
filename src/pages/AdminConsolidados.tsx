@@ -26,7 +26,7 @@ function filas(casos: CasoSoporte[]) {
   }))
 }
 
-function exportCSV(casos: CasoSoporte[], desde: string, hasta: string, estado: string) {
+function exportCSV(casos: CasoSoporte[], desde: string, hasta: string, estado: string, tipoSoporte: string) {
   const headers = ['N° Caso', 'Nombre', 'Correo', 'Tipo Inscripción', 'N° Inscripción', 'Tipo de Soporte', 'Descripción', 'Estado', 'Fecha']
   const rows = casos.map((c) => [
     c.caso_numero,
@@ -44,24 +44,23 @@ function exportCSV(casos: CasoSoporte[], desde: string, hasta: string, estado: s
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `consolidado_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}.csv`
+  a.download = `consolidado_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}${tipoSoporte !== 'todos' ? `_${tipoSoporte.replace(/ /g, '_')}` : ''}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
 
-function exportExcel(casos: CasoSoporte[], desde: string, hasta: string, estado: string) {
+function exportExcel(casos: CasoSoporte[], desde: string, hasta: string, estado: string, tipoSoporte: string) {
   const ws = XLSX.utils.json_to_sheet(filas(casos))
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Consolidado')
 
-  // Ajustar ancho de columnas automáticamente
   const colWidths = [
     { wch: 14 }, { wch: 28 }, { wch: 30 }, { wch: 18 },
     { wch: 16 }, { wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 14 },
   ]
   ws['!cols'] = colWidths
 
-  XLSX.writeFile(wb, `consolidado_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}.xlsx`)
+  XLSX.writeFile(wb, `consolidado_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}${tipoSoporte !== 'todos' ? `_${tipoSoporte.replace(/ /g, '_')}` : ''}.xlsx`)
 }
 
 const ESTADOS = [
@@ -327,7 +326,7 @@ export default function AdminConsolidados() {
               {total > 0 && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => exportCSV(casos, desde, hasta, filtroEstado)}
+                    onClick={() => exportCSV(casos, desde, hasta, filtroEstado, filtroTipoSoporte)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -336,7 +335,7 @@ export default function AdminConsolidados() {
                     CSV
                   </button>
                   <button
-                    onClick={() => exportExcel(casos, desde, hasta, filtroEstado)}
+                    onClick={() => exportExcel(casos, desde, hasta, filtroEstado, filtroTipoSoporte)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
