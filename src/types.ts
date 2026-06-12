@@ -19,4 +19,5 @@ export interface MensajeCaso {
   autor: 'usuario' | 'admin'
   mensaje: string
   created_at: string
+  adjunto_url?: string | null
 }

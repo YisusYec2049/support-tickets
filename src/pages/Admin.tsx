@@ -36,6 +36,8 @@ export default function Admin() {
   const [nuevoEstado, setNuevoEstado] = useState<'proceso' | 'resuelto'>('proceso')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [adminFile, setAdminFile] = useState<File | null>(null)
+  const adminFileRef = useRef<HTMLInputElement>(null)
 
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
   const [refreshing, setRefreshing] = useState(false)
@@ -189,16 +191,31 @@ export default function Admin() {
     setSendError(null)
     setSending(true)
     try {
+      let adjunto_url: string | null = null
+      if (adminFile) {
+        const ext = adminFile.name.split('.').pop()
+        const fileName = `${Date.now()}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('attachments')
+          .upload(fileName, adminFile)
+        if (uploadError) throw uploadError
+        const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(fileName)
+        adjunto_url = urlData.publicUrl
+      }
+
       // 1. Insert message — si esto falla sí es un error real
       const { error: msgErr } = await supabase.from('mensajes_casos').insert({
         caso_id: selectedCaso.id,
         autor: 'admin',
         mensaje: adminMsg.trim(),
+        adjunto_url,
       })
       if (msgErr) throw msgErr
 
-      // 2. Limpiar campo y recargar mensajes inmediatamente
+      // 2. Limpiar campos y recargar mensajes inmediatamente
       setAdminMsg('')
+      setAdminFile(null)
+      if (adminFileRef.current) adminFileRef.current.value = ''
       const { data: msgs } = await supabase
         .from('mensajes_casos')
         .select('*')
@@ -394,6 +411,34 @@ export default function Admin() {
                 placeholder="Escribe la respuesta..."
                 className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
               />
+
+              {/* Adjunto */}
+              <div>
+                <input
+                  ref={adminFileRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setAdminFile(e.target.files?.[0] ?? null)}
+                  className="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+                />
+                {adminFile && (
+                  <div className="relative inline-block mt-3">
+                    <img
+                      src={URL.createObjectURL(adminFile)}
+                      alt="Vista previa"
+                      className="max-h-48 rounded-lg border border-slate-200 object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setAdminFile(null); if (adminFileRef.current) adminFileRef.current.value = '' }}
+                      className="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow transition-colors"
+                      title="Quitar imagen"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Estado selector */}
               <div className="flex items-center gap-6">

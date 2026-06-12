@@ -24,6 +24,8 @@ export default function MisCasos() {
   const [sendingReply, setSendingReply] = useState(false)
   const [replyError, setReplyError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [replyFile, setReplyFile] = useState<File | null>(null)
+  const replyFileRef = useRef<HTMLInputElement>(null)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
 
@@ -165,13 +167,28 @@ export default function MisCasos() {
     setReplyError(null)
     setSendingReply(true)
     try {
+      let adjunto_url: string | null = null
+      if (replyFile) {
+        const ext = replyFile.name.split('.').pop()
+        const fileName = `${Date.now()}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('attachments')
+          .upload(fileName, replyFile)
+        if (uploadError) throw uploadError
+        const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(fileName)
+        adjunto_url = urlData.publicUrl
+      }
+
       const { error: err } = await supabase.from('mensajes_casos').insert({
         caso_id: selectedCaso.id,
         autor: 'usuario',
         mensaje: reply.trim(),
+        adjunto_url,
       })
       if (err) throw err
       setReply('')
+      setReplyFile(null)
+      if (replyFileRef.current) replyFileRef.current.value = ''
       // El mensaje nuevo llegará por Realtime automáticamente
     } catch (err: unknown) {
       setReplyError(err instanceof Error ? err.message : 'Error al enviar mensaje.')
@@ -265,6 +282,32 @@ export default function MisCasos() {
                 required
                 className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
               />
+              <div>
+                <input
+                  ref={replyFileRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setReplyFile(e.target.files?.[0] ?? null)}
+                  className="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+                />
+                {replyFile && (
+                  <div className="relative inline-block mt-3">
+                    <img
+                      src={URL.createObjectURL(replyFile)}
+                      alt="Vista previa"
+                      className="max-h-48 rounded-lg border border-slate-200 object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setReplyFile(null); if (replyFileRef.current) replyFileRef.current.value = '' }}
+                      className="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow transition-colors"
+                      title="Quitar imagen"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
               {replyError && (
                 <p className="text-red-600 text-xs">{replyError}</p>
               )}
