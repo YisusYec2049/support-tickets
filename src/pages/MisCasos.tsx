@@ -421,7 +421,10 @@ export default function MisCasos() {
                     <span className="font-bold text-brand-700 group-hover:text-brand-800">
                       {c.caso_numero}
                     </span>
-                    <EstadoBadge estado={c.estado} />
+                    <div className="flex flex-col items-end gap-1">
+                      <EstadoBadge estado={c.estado} />
+                      <span className="text-xs text-slate-400">{c.tipo_soporte}</span>
+                    </div>
                   </div>
                   <p className="text-sm text-slate-600 line-clamp-2">{c.descripcion}</p>
                   <p className="text-xs text-slate-400 mt-2">{formatDate(c.created_at)}</p>
