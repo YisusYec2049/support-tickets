@@ -3,6 +3,7 @@ import type { MensajeCaso } from '../types'
 interface Props {
   mensajes: MensajeCaso[]
   perspectiva?: 'usuario' | 'admin'
+  resolvedAt?: string
 }
 
 function formatDate(iso: string) {
@@ -12,7 +13,7 @@ function formatDate(iso: string) {
   })
 }
 
-export default function MensajeThread({ mensajes, perspectiva = 'usuario' }: Props) {
+export default function MensajeThread({ mensajes, perspectiva = 'usuario', resolvedAt }: Props) {
   if (mensajes.length === 0) {
     return (
       <p className="text-slate-500 text-sm italic text-center py-6">
@@ -58,6 +59,13 @@ export default function MensajeThread({ mensajes, perspectiva = 'usuario' }: Pro
           </div>
         )
       })}
+      {resolvedAt && (
+        <div className="flex justify-center py-2">
+          <span className="text-xs text-slate-400 bg-slate-100 rounded-full px-4 py-1.5">
+            Caso cerrado · {formatDate(resolvedAt)}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

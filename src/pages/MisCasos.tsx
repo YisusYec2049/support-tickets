@@ -268,7 +268,10 @@ export default function MisCasos() {
             {loadingMensajes ? (
               <p className="text-slate-400 text-sm text-center py-6">Cargando mensajes...</p>
             ) : (
-              <MensajeThread mensajes={mensajes} />
+              <MensajeThread
+                mensajes={mensajes}
+                resolvedAt={selectedCaso.estado === 'resuelto' ? selectedCaso.updated_at : undefined}
+              />
             )}
           </div>
 
@@ -323,8 +326,8 @@ export default function MisCasos() {
 
           {selectedCaso.estado === 'resuelto' && (
             <div className="px-6 pb-6">
-              <p className="text-sm text-slate-500 italic text-center bg-slate-50 rounded-lg py-3">
-                Este caso ha sido resuelto. Si necesitas más ayuda, crea un nuevo caso.
+              <p className="text-sm text-slate-500 text-center">
+                Si necesitas más ayuda, crea un nuevo caso.
               </p>
             </div>
           )}

@@ -40,13 +40,18 @@ export default function Admin() {
   const adminFileRef = useRef<HTMLInputElement>(null)
 
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
+  const [busqueda, setBusqueda] = useState('')
+  const [pagina, setPagina] = useState(1)
   const [refreshing, setRefreshing] = useState(false)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
+  const listChannelRef = useRef<RealtimeChannel | null>(null)
+  const ITEMS_PER_PAGE = 15
 
   useEffect(() => {
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current)
+      if (listChannelRef.current) supabase.removeChannel(listChannelRef.current)
     }
   }, [])
 
@@ -71,8 +76,30 @@ export default function Admin() {
     }
   }, [])
 
+  function suscribirALista() {
+    if (listChannelRef.current) supabase.removeChannel(listChannelRef.current)
+    const channel = supabase
+      .channel('admin-lista-casos')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'casos_soporte' },
+        (payload) => {
+          const nuevo = payload.new as CasoSoporte
+          playNotification()
+          setCasos((prev) => [nuevo, ...prev])
+          setStats((s) => ({ ...s, total: s.total + 1, pendiente: s.pendiente + 1 }))
+        },
+      )
+      .subscribe()
+    listChannelRef.current = channel
+  }
+
   useEffect(() => {
-    if (authenticated) cargarCasos()
+    if (authenticated) {
+      cargarCasos()
+      suscribirALista()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, cargarCasos])
 
   async function recargar() {
@@ -295,8 +322,19 @@ export default function Admin() {
   }
 
   // ─── Dashboard ──────────────────────────────────────────────────────────────
-  const casosFiltrados =
-    filtroEstado === 'todos' ? casos : casos.filter((c) => c.estado === filtroEstado as CasoSoporte['estado'])
+  const casosFiltrados = casos
+    .filter((c) => filtroEstado === 'todos' || c.estado === (filtroEstado as CasoSoporte['estado']))
+    .filter((c) => {
+      if (!busqueda.trim()) return true
+      const q = busqueda.toLowerCase()
+      return (
+        c.caso_numero.toLowerCase().includes(q) ||
+        c.nombre.toLowerCase().includes(q) ||
+        c.correo.toLowerCase().includes(q)
+      )
+    })
+  const totalPaginas = Math.ceil(casosFiltrados.length / ITEMS_PER_PAGE)
+  const casosPaginados = casosFiltrados.slice((pagina - 1) * ITEMS_PER_PAGE, pagina * ITEMS_PER_PAGE)
 
   return (
     <div>
@@ -396,12 +434,16 @@ export default function Admin() {
             {loadingMensajes ? (
               <p className="text-slate-400 text-sm text-center py-6">Cargando...</p>
             ) : (
-              <MensajeThread mensajes={mensajes} perspectiva="admin" />
+              <MensajeThread
+                mensajes={mensajes}
+                perspectiva="admin"
+                resolvedAt={selectedCaso.estado === 'resuelto' ? selectedCaso.updated_at : undefined}
+              />
             )}
           </div>
 
           {/* Reply form (only if not resolved) */}
-          {selectedCaso.estado !== 'resuelto' ? (
+          {selectedCaso.estado !== 'resuelto' && (
             <form onSubmit={enviarMensajeAdmin} className="px-6 pb-6 flex flex-col gap-4">
               <textarea
                 value={adminMsg}
@@ -486,12 +528,6 @@ export default function Admin() {
                   : 'Responder'}
               </button>
             </form>
-          ) : (
-            <div className="px-6 pb-6">
-              <p className="text-sm text-slate-500 italic text-center bg-slate-50 rounded-lg py-3">
-                Caso cerrado.
-              </p>
-            </div>
           )}
         </div>
       )}
@@ -499,8 +535,28 @@ export default function Admin() {
       {/* Filters + table */}
       {!selectedCaso && (
         <>
+          <div className="flex gap-3 mb-4">
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => { setBusqueda(e.target.value); setPagina(1) }}
+              placeholder="Buscar por nombre, correo o N° caso..."
+              className="flex-1 border border-slate-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            />
+            {busqueda && (
+              <button
+                onClick={() => { setBusqueda(''); setPagina(1) }}
+                className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 border border-slate-300 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-slate-700">Todos los casos</h2>
+            <h2 className="font-semibold text-slate-700">
+              {casosFiltrados.length} caso{casosFiltrados.length !== 1 ? 's' : ''}
+            </h2>
             <div className="flex gap-2">
               {[
                 { value: 'todos', label: 'Todos' },
@@ -543,7 +599,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {casosFiltrados.map((c) => (
+                  {casosPaginados.map((c) => (
                     <tr
                       key={c.id}
                       onClick={() => abrirCaso(c)}
@@ -563,6 +619,29 @@ export default function Admin() {
                   ))}
                 </tbody>
               </table>
+              {totalPaginas > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+                  <span className="text-xs text-slate-500">
+                    Página {pagina} de {totalPaginas}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                      disabled={pagina === 1}
+                      className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                    >
+                      ← Anterior
+                    </button>
+                    <button
+                      onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                      disabled={pagina === totalPaginas}
+                      className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                    >
+                      Siguiente →
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </>
