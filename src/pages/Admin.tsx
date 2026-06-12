@@ -9,6 +9,17 @@ import MensajeThread from '../components/MensajeThread'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD as string
 
+const SIN_ID = ['Conciliaciones Bancarias', 'Reportes', 'Link de Pago']
+
+const ID_LABEL: Record<string, string> = {
+  'Inscripciones': 'N° Inscripción',
+  'Comprobantes de Ingreso': 'ID del Comprobante de Ingreso',
+  'Acuerdo de pago': 'ID del Acuerdo de pago',
+  'Ordenes de Trabajo': 'ID de la Orden de Trabajo',
+  'Comprobante de Egreso': 'ID del Comprobante de Egreso',
+  'Otros': 'ID',
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 }
@@ -391,17 +402,23 @@ export default function Admin() {
               <span className="font-medium">{selectedCaso.nombre}</span>
             </div>
             <div>
-              <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
-              <span className="font-medium">{selectedCaso.tipo_usuario}</span>
-            </div>
-            <div>
-              <span className="text-slate-500">N° Inscripción:</span>{' '}
-              <span className="font-medium">{selectedCaso.numero_id}</span>
-            </div>
-            <div>
               <span className="text-slate-500">Tipo de Soporte:</span>{' '}
               <span className="font-medium">{selectedCaso.tipo_soporte}</span>
             </div>
+            {selectedCaso.tipo_soporte === 'Inscripciones' && (
+              <div>
+                <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
+                <span className="font-medium">{selectedCaso.tipo_usuario}</span>
+              </div>
+            )}
+            {!SIN_ID.includes(selectedCaso.tipo_soporte) && selectedCaso.numero_id && (
+              <div>
+                <span className="text-slate-500">
+                  {ID_LABEL[selectedCaso.tipo_soporte] ?? 'ID'}:
+                </span>{' '}
+                <span className="font-medium">{selectedCaso.numero_id}</span>
+              </div>
+            )}
             <div>
               <span className="text-slate-500">Correo:</span>{' '}
               <span className="font-medium">{selectedCaso.correo}</span>

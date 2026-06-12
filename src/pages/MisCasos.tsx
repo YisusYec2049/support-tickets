@@ -10,6 +10,17 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
 }
 
+const SIN_ID = ['Conciliaciones Bancarias', 'Reportes', 'Link de Pago']
+
+const ID_LABEL: Record<string, string> = {
+  'Inscripciones': 'N° Inscripción',
+  'Comprobantes de Ingreso': 'ID del Comprobante de Ingreso',
+  'Acuerdo de pago': 'ID del Acuerdo de pago',
+  'Ordenes de Trabajo': 'ID de la Orden de Trabajo',
+  'Comprobante de Egreso': 'ID del Comprobante de Egreso',
+  'Otros': 'ID',
+}
+
 export default function MisCasos() {
   const [correo, setCorreo] = useState('')
   const [loading, setLoading] = useState(false)
@@ -249,17 +260,43 @@ export default function MisCasos() {
             </button>
           </div>
 
-          <div className="px-6 py-4 border-b border-slate-100 text-sm text-slate-600">
-            <span className="font-medium text-slate-800">{selectedCaso.descripcion}</span>
-            <span className="ml-4 text-slate-400">{formatDate(selectedCaso.created_at)}</span>
+          <div className="px-6 py-4 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-slate-500">Tipo de Soporte:</span>{' '}
+              <span className="font-medium">{selectedCaso.tipo_soporte}</span>
+            </div>
+            {selectedCaso.tipo_soporte === 'Inscripciones' && (
+              <div>
+                <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
+                <span className="font-medium">{selectedCaso.tipo_usuario}</span>
+              </div>
+            )}
+            {!SIN_ID.includes(selectedCaso.tipo_soporte) && selectedCaso.numero_id && (
+              <div>
+                <span className="text-slate-500">
+                  {ID_LABEL[selectedCaso.tipo_soporte] ?? 'ID'}:
+                </span>{' '}
+                <span className="font-medium">{selectedCaso.numero_id}</span>
+              </div>
+            )}
+            <div className="sm:col-span-2">
+              <span className="text-slate-500">Descripción:</span>{' '}
+              <span className="font-medium">{selectedCaso.descripcion}</span>
+            </div>
+            <div>
+              <span className="text-slate-500">Fecha:</span>{' '}
+              <span className="font-medium">{formatDate(selectedCaso.created_at)}</span>
+            </div>
             {selectedCaso.adjunto_url && (
-              <a href={selectedCaso.adjunto_url} target="_blank" rel="noopener noreferrer">
-                <img
-                  src={selectedCaso.adjunto_url}
-                  alt="Adjunto"
-                  className="mt-3 max-h-48 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity"
-                />
-              </a>
+              <div className="sm:col-span-2">
+                <a href={selectedCaso.adjunto_url} target="_blank" rel="noopener noreferrer">
+                  <img
+                    src={selectedCaso.adjunto_url}
+                    alt="Adjunto"
+                    className="max-h-48 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity"
+                  />
+                </a>
+              </div>
             )}
           </div>
 
