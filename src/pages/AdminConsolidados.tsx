@@ -12,6 +12,18 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
 }
 
+function tiempoResolucion(caso: CasoSoporte): string {
+  if (caso.estado !== 'resuelto') return '—'
+  const ms = new Date(caso.updated_at).getTime() - new Date(caso.created_at).getTime()
+  const totalMinutes = Math.floor(ms / 60000)
+  const days = Math.floor(totalMinutes / 1440)
+  const hours = Math.floor((totalMinutes % 1440) / 60)
+  const minutes = totalMinutes % 60
+  if (days > 0) return `${days}d ${hours}h`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
 function filas(casos: CasoSoporte[]) {
   return casos.map((c) => ({
     'N° Caso': c.caso_numero,
@@ -23,11 +35,12 @@ function filas(casos: CasoSoporte[]) {
     Descripción: c.descripcion,
     Estado: c.estado,
     Fecha: formatDate(c.created_at),
+    'Tiempo Resolución': tiempoResolucion(c),
   }))
 }
 
 function exportCSV(casos: CasoSoporte[], desde: string, hasta: string, estado: string, tipoSoporte: string) {
-  const headers = ['N° Caso', 'Nombre', 'Correo', 'Tipo Inscripción', 'N° Inscripción', 'Tipo de Soporte', 'Descripción', 'Estado', 'Fecha']
+  const headers = ['N° Caso', 'Nombre', 'Correo', 'Tipo Inscripción', 'N° Inscripción', 'Tipo de Soporte', 'Descripción', 'Estado', 'Fecha', 'Tiempo Resolución']
   const rows = casos.map((c) => [
     c.caso_numero,
     c.nombre,
@@ -38,6 +51,7 @@ function exportCSV(casos: CasoSoporte[], desde: string, hasta: string, estado: s
     `"${c.descripcion.replace(/"/g, '""')}"`,
     c.estado,
     formatDate(c.created_at),
+    tiempoResolucion(c),
   ])
   const csv = [headers, ...rows].map((r) => r.join(',')).join('\n')
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -356,7 +370,7 @@ export default function AdminConsolidados() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      {['N° Caso', 'Nombre', 'Correo', 'Tipo', 'N° Inscripción', 'Tipo de Soporte', 'Estado', 'Fecha'].map((h) => (
+                      {['N° Caso', 'Nombre', 'Correo', 'Tipo', 'N° Inscripción', 'Tipo de Soporte', 'Estado', 'Fecha', 'Tiempo Resolución'].map((h) => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wide whitespace-nowrap">
                           {h}
                         </th>
@@ -374,6 +388,7 @@ export default function AdminConsolidados() {
                         <td className="px-4 py-3 text-slate-600">{c.tipo_soporte}</td>
                         <td className="px-4 py-3"><EstadoBadge estado={c.estado} /></td>
                         <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{formatDate(c.created_at)}</td>
+                        <td className="px-4 py-3 text-slate-600 text-xs whitespace-nowrap font-medium">{tiempoResolucion(c)}</td>
                       </tr>
                     ))}
                   </tbody>
