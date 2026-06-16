@@ -39,12 +39,15 @@ const EMPTY: FormData = {
 }
 
 async function generarCasoNumero(): Promise<string> {
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from('casos_soporte')
-    .select('*', { count: 'exact', head: true })
+    .select('caso_numero')
+    .order('caso_numero', { ascending: false })
+    .limit(1)
   if (error) throw error
-  const next = (count ?? 0) + 1
-  return `CASO-${String(next).padStart(5, '0')}`
+  if (!data || data.length === 0) return 'CASO-00001'
+  const num = parseInt(data[0].caso_numero.replace('CASO-', ''), 10)
+  return `CASO-${String(num + 1).padStart(5, '0')}`
 }
 
 export default function Home() {
@@ -73,29 +76,43 @@ export default function Home() {
         const { error: uploadError } = await supabase.storage
           .from('attachments')
           .upload(fileName, file)
-        if (uploadError) throw uploadError
+        if (uploadError) throw new Error(`Error al subir el adjunto: ${uploadError.message}`)
         const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(fileName)
         adjunto_url = urlData.publicUrl
       }
 
-      const caso_numero = await generarCasoNumero()
-      const { error: insertError } = await supabase.from('casos_soporte').insert({
-        caso_numero,
-        nombre: form.nombre,
-        tipo_usuario: form.tipo_usuario,
-        numero_id: form.numero_id,
-        correo: form.correo.toLowerCase().trim(),
-        tipo_soporte: form.tipo_soporte,
-        descripcion: form.descripcion,
-        estado: 'pendiente',
-        adjunto_url,
-      })
+      let caso_numero = await generarCasoNumero()
+      let insertError = null
+      for (let intento = 0; intento < 3; intento++) {
+        const { error } = await supabase.from('casos_soporte').insert({
+          caso_numero,
+          nombre: form.nombre,
+          tipo_usuario: form.tipo_usuario,
+          numero_id: form.numero_id,
+          correo: form.correo.toLowerCase().trim(),
+          tipo_soporte: form.tipo_soporte,
+          descripcion: form.descripcion,
+          estado: 'pendiente',
+          adjunto_url,
+        })
+        insertError = error
+        if (!insertError) break
+        if (insertError.code === '23505') {
+          caso_numero = await generarCasoNumero()
+          continue
+        }
+        break
+      }
       if (insertError) throw insertError
       setCasoCreado(caso_numero)
       setForm(EMPTY)
       setFile(null)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al crear el caso. Intenta de nuevo.')
+      const msg =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string })?.message ?? 'Error al crear el caso. Intenta de nuevo.'
+      setError(msg)
     } finally {
       setLoading(false)
     }
