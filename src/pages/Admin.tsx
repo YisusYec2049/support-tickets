@@ -53,6 +53,7 @@ export default function Admin() {
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
   const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
+  const [animDir, setAnimDir] = useState<'right' | 'left'>('right')
   const [refreshing, setRefreshing] = useState(false)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
@@ -583,8 +584,8 @@ export default function Admin() {
               ].map((f) => (
                 <button
                   key={f.value}
-                  onClick={() => setFiltroEstado(f.value)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                  onClick={() => { setFiltroEstado(f.value); setAnimDir('right'); setPagina(1) }}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold border active:scale-95 transition-all ${
                     filtroEstado === f.value
                       ? 'bg-brand-700 text-white border-brand-700'
                       : 'bg-white text-slate-600 border-slate-300 hover:border-brand-400'
@@ -615,7 +616,10 @@ export default function Admin() {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody
+                  key={pagina}
+                  className={`divide-y divide-slate-100 ${animDir === 'right' ? 'animate-slide-in-right' : 'animate-slide-in-left'}`}
+                >
                   {casosPaginados.map((c) => (
                     <tr
                       key={c.id}
@@ -643,16 +647,16 @@ export default function Admin() {
                   </span>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                      onClick={() => { setAnimDir('left'); setPagina((p) => Math.max(1, p - 1)) }}
                       disabled={pagina === 1}
-                      className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                      className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 active:scale-95 transition-all"
                     >
                       ← Anterior
                     </button>
                     <button
-                      onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                      onClick={() => { setAnimDir('right'); setPagina((p) => Math.min(totalPaginas, p + 1)) }}
                       disabled={pagina === totalPaginas}
-                      className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                      className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 active:scale-95 transition-all"
                     >
                       Siguiente →
                     </button>
