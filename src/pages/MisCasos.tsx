@@ -49,6 +49,7 @@ export default function MisCasos() {
   const [replyError, setReplyError] = useState<string | null>(null)
   const [replyFile, setReplyFile] = useState<File | null>(null)
   const replyFileRef = useRef<HTMLInputElement>(null)
+  const replyFormRef = useRef<HTMLFormElement>(null)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
 
@@ -316,12 +317,18 @@ export default function MisCasos() {
           </div>
 
           {selectedCaso.estado !== 'resuelto' && (
-            <form onSubmit={enviarRespuesta} className="px-6 pb-6 flex flex-col gap-3">
+            <form ref={replyFormRef} onSubmit={enviarRespuesta} className="px-6 pb-6 flex flex-col gap-3">
               <textarea
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault()
+                    replyFormRef.current?.requestSubmit()
+                  }
+                }}
                 rows={3}
-                placeholder="Escribe tu mensaje..."
+                placeholder="Escribe tu mensaje... (Ctrl+Enter para enviar)"
                 required
                 className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
               />

@@ -49,6 +49,7 @@ export default function Admin() {
   const [sendError, setSendError] = useState<string | null>(null)
   const [adminFile, setAdminFile] = useState<File | null>(null)
   const adminFileRef = useRef<HTMLInputElement>(null)
+  const adminFormRef = useRef<HTMLFormElement>(null)
 
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
   const [busqueda, setBusqueda] = useState('')
@@ -462,13 +463,19 @@ export default function Admin() {
 
           {/* Reply form (only if not resolved) */}
           {selectedCaso.estado !== 'resuelto' && (
-            <form onSubmit={enviarMensajeAdmin} className="px-6 pb-6 flex flex-col gap-4">
+            <form ref={adminFormRef} onSubmit={enviarMensajeAdmin} className="px-6 pb-6 flex flex-col gap-4">
               <textarea
                 value={adminMsg}
                 onChange={(e) => setAdminMsg(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault()
+                    adminFormRef.current?.requestSubmit()
+                  }
+                }}
                 rows={3}
                 required
-                placeholder="Escribe la respuesta..."
+                placeholder="Escribe la respuesta... (Ctrl+Enter para enviar)"
                 className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
               />
 
