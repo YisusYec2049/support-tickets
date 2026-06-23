@@ -25,10 +25,7 @@ export default function Layout() {
           </Link>
           <nav className="flex gap-2">
             <NavLink to="/" className={linkClass} end>
-              Nuevo Caso
-            </NavLink>
-            <NavLink to="/mis-casos" className={linkClass}>
-              Mis Casos
+              Home
             </NavLink>
             <NavLink to="/admin" className={linkClass} end>
               Administración

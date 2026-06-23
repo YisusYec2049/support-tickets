@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
+import { getUserEmail, clearUserEmail } from '../lib/userSession'
 import type { CasoSoporte, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
@@ -21,12 +23,23 @@ const ID_LABEL: Record<string, string> = {
   'Otros': 'ID',
 }
 
+function getLastSeen(casoId: string): string | null {
+  return localStorage.getItem(`seen_${casoId}`)
+}
+
+function markAsSeen(casoId: string) {
+  localStorage.setItem(`seen_${casoId}`, new Date().toISOString())
+}
+
 export default function MisCasos() {
-  const [correo, setCorreo] = useState('')
+  const navigate = useNavigate()
+  const correo = getUserEmail() ?? ''
+
   const [loading, setLoading] = useState(false)
   const [casos, setCasos] = useState<CasoSoporte[]>([])
   const [searched, setSearched] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [unreadCount, setUnreadCount] = useState<Record<string, number>>({})
 
   const [selectedCaso, setSelectedCaso] = useState<CasoSoporte | null>(null)
   const [mensajes, setMensajes] = useState<MensajeCaso[]>([])
@@ -34,20 +47,73 @@ export default function MisCasos() {
   const [reply, setReply] = useState('')
   const [sendingReply, setSendingReply] = useState(false)
   const [replyError, setReplyError] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
   const [replyFile, setReplyFile] = useState<File | null>(null)
   const replyFileRef = useRef<HTMLInputElement>(null)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
 
-  // Limpiar suscripción al desmontar el componente
+  useEffect(() => {
+    if (!correo) {
+      navigate('/', { replace: true })
+      return
+    }
+    buscarCasos(correo)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
-      }
+      if (channelRef.current) supabase.removeChannel(channelRef.current)
     }
   }, [])
+
+  async function cargarNoLeidos(casoIds: string[]) {
+    if (casoIds.length === 0) return
+    const { data } = await supabase
+      .from('mensajes_casos')
+      .select('caso_id, created_at')
+      .in('caso_id', casoIds)
+      .eq('autor', 'admin')
+
+    const counts: Record<string, number> = {}
+    for (const msg of data ?? []) {
+      const lastSeen = getLastSeen(msg.caso_id)
+      if (!lastSeen || msg.created_at > lastSeen) {
+        counts[msg.caso_id] = (counts[msg.caso_id] ?? 0) + 1
+      }
+    }
+    setUnreadCount(counts)
+  }
+
+  async function buscarCasos(email: string) {
+    setError(null)
+    setLoading(true)
+    setSearched(false)
+    cancelarSuscripcion()
+    setSelectedCaso(null)
+    try {
+      const { data, error: err } = await supabase
+        .from('casos_soporte')
+        .select('*')
+        .eq('correo', email)
+        .order('created_at', { ascending: false })
+      if (err) throw err
+      const lista = data ?? []
+      setCasos(lista)
+      setSearched(true)
+      await cargarNoLeidos(lista.map((c) => c.id))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al buscar casos.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function cerrarSesion() {
+    cancelarSuscripcion()
+    clearUserEmail()
+    navigate('/')
+  }
 
   function cancelarSuscripcion() {
     if (channelRef.current) {
@@ -58,17 +124,11 @@ export default function MisCasos() {
 
   function suscribirACaso(caso: CasoSoporte) {
     cancelarSuscripcion()
-
     const channel = supabase
       .channel(`caso-${caso.id}`)
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'casos_soporte',
-          filter: `id=eq.${caso.id}`,
-        },
+        { event: 'UPDATE', schema: 'public', table: 'casos_soporte', filter: `id=eq.${caso.id}` },
         (payload) => {
           const updated = payload.new as CasoSoporte
           setSelectedCaso(updated)
@@ -77,12 +137,7 @@ export default function MisCasos() {
       )
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'mensajes_casos',
-          filter: `caso_id=eq.${caso.id}`,
-        },
+        { event: 'INSERT', schema: 'public', table: 'mensajes_casos', filter: `caso_id=eq.${caso.id}` },
         (payload) => {
           const nuevo = payload.new as MensajeCaso
           if (nuevo.autor === 'admin') playNotification()
@@ -90,64 +145,12 @@ export default function MisCasos() {
         },
       )
       .subscribe()
-
     channelRef.current = channel
   }
 
-  async function recargar() {
-    if (refreshing) return
-    setRefreshing(true)
-    try {
-      if (selectedCaso) {
-        const { data } = await supabase
-          .from('mensajes_casos')
-          .select('*')
-          .eq('caso_id', selectedCaso.id)
-          .order('created_at', { ascending: true })
-        setMensajes(data ?? [])
-        const { data: casoActualizado } = await supabase
-          .from('casos_soporte')
-          .select('*')
-          .eq('id', selectedCaso.id)
-          .single()
-        if (casoActualizado) setSelectedCaso(casoActualizado)
-      } else if (searched && correo) {
-        const { data } = await supabase
-          .from('casos_soporte')
-          .select('*')
-          .eq('correo', correo.toLowerCase().trim())
-          .order('created_at', { ascending: false })
-        setCasos(data ?? [])
-      }
-    } finally {
-      setRefreshing(false)
-    }
-  }
-
-  async function buscar(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-    setSearched(false)
-    cancelarSuscripcion()
-    setSelectedCaso(null)
-    try {
-      const { data, error: err } = await supabase
-        .from('casos_soporte')
-        .select('*')
-        .eq('correo', correo.toLowerCase().trim())
-        .order('created_at', { ascending: false })
-      if (err) throw err
-      setCasos(data ?? [])
-      setSearched(true)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al buscar casos.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   async function abrirCaso(caso: CasoSoporte) {
+    markAsSeen(caso.id)
+    setUnreadCount((prev) => ({ ...prev, [caso.id]: 0 }))
     setSelectedCaso(caso)
     setMensajes([])
     setReply('')
@@ -200,7 +203,6 @@ export default function MisCasos() {
       setReply('')
       setReplyFile(null)
       if (replyFileRef.current) replyFileRef.current.value = ''
-      // El mensaje nuevo llegará por Realtime automáticamente
     } catch (err: unknown) {
       setReplyError(err instanceof Error ? err.message : 'Error al enviar mensaje.')
     } finally {
@@ -208,33 +210,37 @@ export default function MisCasos() {
     }
   }
 
+  const casosOrdenados = [...casos].sort((a, b) => {
+    const ua = unreadCount[a.id] ?? 0
+    const ub = unreadCount[b.id] ?? 0
+    if (ua > 0 && ub === 0) return -1
+    if (ua === 0 && ub > 0) return 1
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
+
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-brand-800">Mis Casos</h1>
-        <p className="text-slate-500 mt-1 text-sm">
-          Ingresa tu correo para consultar el estado de tus solicitudes.
-        </p>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-brand-800">Mis Casos</h1>
+          <p className="text-slate-500 mt-1 text-sm">{correo}</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/nuevo-caso')}
+            className="text-sm text-white bg-brand-700 hover:bg-brand-800 px-3 py-1.5 rounded-lg transition-colors font-medium"
+          >
+            Crear Nuevo Caso
+          </button>
+          <button
+            onClick={cerrarSesion}
+            className="text-sm text-slate-500 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Cambiar correo
+          </button>
+        </div>
       </div>
-
-      {/* Search */}
-      <form onSubmit={buscar} className="flex gap-3 mb-8">
-        <input
-          type="email"
-          value={correo}
-          onChange={(e) => setCorreo(e.target.value)}
-          required
-          placeholder="tucorreo@ejemplo.com"
-          className="flex-1 border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-5 py-2.5 bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap"
-        >
-          {loading ? 'Buscando...' : 'Buscar'}
-        </button>
-      </form>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-6">
@@ -252,10 +258,7 @@ export default function MisCasos() {
                 <EstadoBadge estado={selectedCaso.estado} />
               </span>
             </div>
-            <button
-              onClick={volverALista}
-              className="text-blue-200 hover:text-white text-sm"
-            >
+            <button onClick={volverALista} className="text-blue-200 hover:text-white text-sm">
               ← Volver
             </button>
           </div>
@@ -348,9 +351,7 @@ export default function MisCasos() {
                   </div>
                 )}
               </div>
-              {replyError && (
-                <p className="text-red-600 text-xs">{replyError}</p>
-              )}
+              {replyError && <p className="text-red-600 text-xs">{replyError}</p>}
               <button
                 type="submit"
                 disabled={sendingReply}
@@ -371,65 +372,64 @@ export default function MisCasos() {
         </div>
       )}
 
-      {/* FAB — solo visible si hay algo que recargar */}
-      {(searched || selectedCaso) && (
-        <button
-          onClick={recargar}
-          disabled={refreshing}
-          title="Actualizar"
-          className="fixed bottom-6 right-6 z-50 bg-brand-700 hover:bg-brand-800 disabled:bg-brand-400 text-white w-13 h-13 p-3.5 rounded-full shadow-lg transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-            <path d="M21 3v5h-5" />
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-            <path d="M3 21v-5h5" />
-          </svg>
-        </button>
-      )}
-
       {/* Cases list */}
-      {!selectedCaso && searched && (
+      {!selectedCaso && (
         <>
-          {casos.length === 0 ? (
+          {loading ? (
+            <p className="text-slate-400 text-sm text-center py-16">Cargando casos...</p>
+          ) : searched && casos.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
               <p className="text-4xl mb-3">📭</p>
-              <p className="font-medium text-slate-600">No se encontraron casos para este correo.</p>
-              <p className="text-sm mt-1">Verifica el correo o crea un nuevo caso.</p>
+              <p className="font-medium text-slate-600">No tienes casos registrados aún.</p>
+              <p className="text-sm mt-1">Usa el botón "Crear Nuevo Caso" para radicar tu primera solicitud.</p>
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-slate-500 mb-4">
-                {casos.length} caso{casos.length !== 1 ? 's' : ''} encontrado{casos.length !== 1 ? 's' : ''}
-              </p>
-              {casos.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => abrirCaso(c)}
-                  className="w-full text-left bg-white border border-slate-200 rounded-xl px-5 py-4 hover:border-brand-400 hover:shadow-sm transition-all group"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-brand-700 group-hover:text-brand-800">
-                      {c.caso_numero}
-                    </span>
-                    <div className="flex flex-col items-end gap-1">
-                      <EstadoBadge estado={c.estado} />
-                      <span className="text-xs text-slate-400">{c.tipo_soporte}</span>
+              {searched && (
+                <p className="text-sm text-slate-500 mb-4">
+                  {casos.length} caso{casos.length !== 1 ? 's' : ''} encontrado{casos.length !== 1 ? 's' : ''}
+                </p>
+              )}
+              {casosOrdenados.map((c) => {
+                const unread = unreadCount[c.id] ?? 0
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => abrirCaso(c)}
+                    className={`relative w-full text-left rounded-xl border transition-all group overflow-hidden ${
+                      unread > 0
+                        ? 'border-blue-300'
+                        : 'bg-white border-slate-200 hover:border-brand-400 hover:shadow-sm'
+                    }`}
+                  >
+                    {/* Fondo azul palpitante para no leídos */}
+                    {unread > 0 && (
+                      <div className="absolute inset-0 bg-blue-100 animate-pulse pointer-events-none" />
+                    )}
+
+                    {/* Badge de mensajes no leídos */}
+                    {unread > 0 && (
+                      <span className="absolute top-2 right-2 z-10 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1.5">
+                        {unread}
+                      </span>
+                    )}
+
+                    <div className="relative z-10 px-5 py-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`font-bold ${unread > 0 ? 'text-blue-700' : 'text-brand-700 group-hover:text-brand-800'}`}>
+                          {c.caso_numero}
+                        </span>
+                        <div className="flex flex-col items-end gap-1 pr-6">
+                          <EstadoBadge estado={c.estado} />
+                          <span className="text-xs text-slate-400">{c.tipo_soporte}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-600 line-clamp-2">{c.descripcion}</p>
+                      <p className="text-xs text-slate-400 mt-2">{formatDate(c.created_at)}</p>
                     </div>
-                  </div>
-                  <p className="text-sm text-slate-600 line-clamp-2">{c.descripcion}</p>
-                  <p className="text-xs text-slate-400 mt-2">{formatDate(c.created_at)}</p>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           )}
         </>
