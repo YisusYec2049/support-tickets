@@ -4,6 +4,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
 import { isAdminAuthenticated, setAdminAuthenticated, clearAdminAuth } from '../lib/adminAuth'
+import PasswordInput from '../components/PasswordInput'
 import type { CasoSoporte, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
@@ -312,14 +313,11 @@ export default function Admin() {
             Área restringida — Dirección Financiera
           </p>
           <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Contraseña"
               required
               autoFocus
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             />
             {authError && (
               <p className="text-red-600 text-xs">Contraseña incorrecta. Intenta de nuevo.</p>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import { isAdminAuthenticated, setAdminAuthenticated, clearAdminAuth } from '../lib/adminAuth'
+import PasswordInput from '../components/PasswordInput'
 import { useNavigate } from 'react-router-dom'
 import EstadoBadge from '../components/EstadoBadge'
 import type { CasoSoporte } from '../types'
@@ -172,14 +173,11 @@ export default function AdminConsolidados() {
           <h2 className="text-xl font-bold text-brand-800 mb-1 text-center">Acceso Administrativo</h2>
           <p className="text-slate-500 text-sm text-center mb-6">Área restringida — Dirección Financiera</p>
           <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Contraseña"
               required
               autoFocus
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             />
             {authError && <p className="text-red-600 text-xs">Contraseña incorrecta.</p>}
             <button
