@@ -1,6 +1,7 @@
-import { Outlet, NavLink, Link } from 'react-router-dom'
+import { Outlet, NavLink, Link, useLocation } from 'react-router-dom'
 
 export default function Layout() {
+  const location = useLocation()
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `px-4 py-2 rounded-md text-sm font-medium transition-colors ${
       isActive
@@ -36,7 +37,7 @@ export default function Layout() {
 
       {/* Page content */}
       <main className="flex-1 w-full bg-slate-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        <div key={location.pathname} className="max-w-6xl mx-auto px-4 sm:px-6 py-8 animate-page-in">
           <Outlet />
         </div>
       </main>

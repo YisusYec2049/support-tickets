@@ -11,6 +11,7 @@ import AdminConsolidados from './pages/AdminConsolidados'
 import AdminCartera from './pages/AdminCartera'
 import AdminConsolidadosCartera from './pages/AdminConsolidadosCartera'
 import AdminSelector from './pages/AdminSelector'
+import SuperAdmin from './pages/SuperAdmin'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/admin/consolidados" element={<AdminConsolidados />} />
           <Route path="/admin/cartera" element={<AdminCartera />} />
           <Route path="/admin/cartera/consolidados" element={<AdminConsolidadosCartera />} />
+          <Route path="/superadmin" element={<SuperAdmin />} />
         </Route>
       </Routes>
     </BrowserRouter>

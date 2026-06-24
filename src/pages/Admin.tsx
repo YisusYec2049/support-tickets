@@ -58,7 +58,6 @@ export default function Admin() {
   const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
   const [animDir, setAnimDir] = useState<'right' | 'left'>('right')
-  const [refreshing, setRefreshing] = useState(false)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
   const listChannelRef = useRef<RealtimeChannel | null>(null)
@@ -117,31 +116,6 @@ export default function Admin() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, cargarCasos])
-
-  async function recargar() {
-    if (refreshing) return
-    setRefreshing(true)
-    try {
-      if (selectedCaso) {
-        const { data: msgs } = await supabase
-          .from('mensajes_casos')
-          .select('*')
-          .eq('caso_id', selectedCaso.id)
-          .order('created_at', { ascending: true })
-        setMensajes(msgs ?? [])
-        const { data: casoActualizado } = await supabase
-          .from('casos_soporte')
-          .select('*')
-          .eq('id', selectedCaso.id)
-          .single()
-        if (casoActualizado) setSelectedCaso(casoActualizado)
-      } else {
-        await cargarCasos()
-      }
-    } finally {
-      setRefreshing(false)
-    }
-  }
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -301,6 +275,7 @@ export default function Admin() {
     }
   }
 
+  // ─── Auth check ─────────────────────────────────────────────────────────────
   // ─── Login screen ───────────────────────────────────────────────────────────
   if (!authenticated) {
     return (
@@ -683,31 +658,6 @@ export default function Admin() {
         </>
       )}
 
-      {/* FAB — visible una vez autenticado */}
-      {authenticated && (
-        <button
-          onClick={recargar}
-          disabled={refreshing}
-          title="Actualizar"
-          className="fixed bottom-6 right-6 z-50 bg-brand-700 hover:bg-brand-800 disabled:bg-brand-400 text-white p-3.5 rounded-full shadow-lg transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-            <path d="M21 3v5h-5" />
-            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-            <path d="M3 21v-5h5" />
-          </svg>
-        </button>
-      )}
     </div>
   )
 }

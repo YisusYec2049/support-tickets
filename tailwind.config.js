@@ -12,10 +12,15 @@ export default {
           '0%':   { opacity: '0', transform: 'translateX(-14px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
+        'page-in': {
+          '0%':   { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'slide-in-right': 'slide-in-right 0.18s ease-out',
         'slide-in-left':  'slide-in-left  0.18s ease-out',
+        'page-in':        'page-in 0.25s ease-out',
       },
       colors: {
         brand: {
