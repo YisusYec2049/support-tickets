@@ -1,18 +1,18 @@
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
-import { isAdminAuthenticated, setAdminAuthenticated, clearAdminAuth } from '../lib/adminAuth'
+import { isAdminCarteraAuthenticated, setAdminCarteraAuthenticated, clearAdminCarteraAuth } from '../lib/adminAuthCartera'
 import { useNavigate } from 'react-router-dom'
 import EstadoBadge from '../components/EstadoBadge'
-import type { CasoSoporte } from '../types'
+import type { CasoCartera } from '../types'
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD as string
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD_CARTERA as string
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
 }
 
-function tiempoResolucion(caso: CasoSoporte): string {
+function tiempoResolucion(caso: CasoCartera): string {
   if (caso.estado !== 'resuelto') return '—'
   const ms = new Date(caso.updated_at).getTime() - new Date(caso.created_at).getTime()
   const totalMinutes = Math.floor(ms / 60000)
@@ -24,13 +24,11 @@ function tiempoResolucion(caso: CasoSoporte): string {
   return `${minutes}m`
 }
 
-function filas(casos: CasoSoporte[]) {
+function filas(casos: CasoCartera[]) {
   return casos.map((c) => ({
     'N° Caso': c.caso_numero,
     Nombre: c.nombre,
     Correo: c.correo,
-    'Tipo Inscripción': c.tipo_usuario,
-    'N° Inscripción': c.numero_id,
     'Tipo de Soporte': c.tipo_soporte,
     Descripción: c.descripcion,
     Estado: c.estado,
@@ -39,14 +37,12 @@ function filas(casos: CasoSoporte[]) {
   }))
 }
 
-function exportCSV(casos: CasoSoporte[], desde: string, hasta: string, estado: string, tipoSoporte: string) {
-  const headers = ['N° Caso', 'Nombre', 'Correo', 'Tipo Inscripción', 'N° Inscripción', 'Tipo de Soporte', 'Descripción', 'Estado', 'Fecha', 'Tiempo Resolución']
+function exportCSV(casos: CasoCartera[], desde: string, hasta: string, estado: string, tipoSoporte: string) {
+  const headers = ['N° Caso', 'Nombre', 'Correo', 'Tipo de Soporte', 'Descripción', 'Estado', 'Fecha', 'Tiempo Resolución']
   const rows = casos.map((c) => [
     c.caso_numero,
     c.nombre,
     c.correo,
-    c.tipo_usuario,
-    c.numero_id,
     c.tipo_soporte,
     `"${c.descripcion.replace(/"/g, '""')}"`,
     c.estado,
@@ -58,23 +54,22 @@ function exportCSV(casos: CasoSoporte[], desde: string, hasta: string, estado: s
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `consolidado_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}${tipoSoporte !== 'todos' ? `_${tipoSoporte.replace(/ /g, '_')}` : ''}.csv`
+  a.download = `consolidado_cartera_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}${tipoSoporte !== 'todos' ? `_${tipoSoporte.replace(/ /g, '_')}` : ''}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
 
-function exportExcel(casos: CasoSoporte[], desde: string, hasta: string, estado: string, tipoSoporte: string) {
+function exportExcel(casos: CasoCartera[], desde: string, hasta: string, estado: string, tipoSoporte: string) {
   const ws = XLSX.utils.json_to_sheet(filas(casos))
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Consolidado')
+  XLSX.utils.book_append_sheet(wb, ws, 'Consolidado Cartera')
 
   const colWidths = [
-    { wch: 14 }, { wch: 28 }, { wch: 30 }, { wch: 18 },
-    { wch: 16 }, { wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 14 },
+    { wch: 14 }, { wch: 28 }, { wch: 30 }, { wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 14 }, { wch: 16 },
   ]
   ws['!cols'] = colWidths
 
-  XLSX.writeFile(wb, `consolidado_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}${tipoSoporte !== 'todos' ? `_${tipoSoporte.replace(/ /g, '_')}` : ''}.xlsx`)
+  XLSX.writeFile(wb, `consolidado_cartera_${desde}_${hasta}${estado !== 'todos' ? `_${estado}` : ''}${tipoSoporte !== 'todos' ? `_${tipoSoporte.replace(/ /g, '_')}` : ''}.xlsx`)
 }
 
 const ESTADOS = [
@@ -96,9 +91,9 @@ const TIPOS_SOPORTE = [
   'Otros',
 ]
 
-export default function AdminConsolidados() {
+export default function AdminConsolidadosCartera() {
   const navigate = useNavigate()
-  const [authenticated, setAuthenticated] = useState(isAdminAuthenticated)
+  const [authenticated, setAuthenticated] = useState(isAdminCarteraAuthenticated)
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState(false)
 
@@ -110,14 +105,14 @@ export default function AdminConsolidados() {
   const [hasta, setHasta] = useState(today)
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [filtroTipoSoporte, setFiltroTipoSoporte] = useState('todos')
-  const [casos, setCasos] = useState<CasoSoporte[]>([])
+  const [casos, setCasos] = useState<CasoCartera[]>([])
   const [loading, setLoading] = useState(false)
   const [generado, setGenerado] = useState(false)
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     if (password === ADMIN_PASSWORD) {
-      setAdminAuthenticated()
+      setAdminCarteraAuthenticated()
       setAuthenticated(true)
       setAuthError(false)
     } else {
@@ -131,7 +126,7 @@ export default function AdminConsolidados() {
     setGenerado(false)
     try {
       let query = supabase
-        .from('casos_soporte')
+        .from('casos_cartera')
         .select('*')
         .gte('created_at', `${desde}T00:00:00`)
         .lte('created_at', `${hasta}T23:59:59`)
@@ -159,10 +154,6 @@ export default function AdminConsolidados() {
     proceso: casos.filter((c) => c.estado === 'proceso').length,
     resuelto: casos.filter((c) => c.estado === 'resuelto').length,
   }
-  const porTipo: Record<string, number> = casos.reduce(
-    (acc, c) => ({ ...acc, [c.tipo_usuario]: (acc[c.tipo_usuario] ?? 0) + 1 }),
-    {} as Record<string, number>,
-  )
 
   // ─── Login ───────────────────────────────────────────────────────────────
   if (!authenticated) {
@@ -170,7 +161,7 @@ export default function AdminConsolidados() {
       <div className="max-w-sm mx-auto py-20">
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
           <h2 className="text-xl font-bold text-brand-800 mb-1 text-center">Acceso Administrativo</h2>
-          <p className="text-slate-500 text-sm text-center mb-6">Área restringida — Dirección Financiera</p>
+          <p className="text-slate-500 text-sm text-center mb-6">Área restringida — Cartera</p>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
@@ -199,18 +190,18 @@ export default function AdminConsolidados() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-brand-800">Consolidados</h1>
+          <h1 className="text-2xl font-bold text-brand-800">Consolidados — Cartera</h1>
           <p className="text-slate-500 text-sm mt-1">Reporte de tickets por rango de fechas</p>
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => navigate('/admin/financiero')}
+            onClick={() => navigate('/admin/cartera')}
             className="text-sm text-brand-700 border border-brand-300 px-3 py-1.5 rounded-lg hover:bg-brand-50 transition-colors"
           >
             ← Panel de casos
           </button>
           <button
-            onClick={() => { clearAdminAuth(); navigate('/admin') }}
+            onClick={() => { clearAdminCarteraAuth(); navigate('/admin') }}
             className="text-sm text-slate-500 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
           >
             Cerrar sesión
@@ -219,15 +210,10 @@ export default function AdminConsolidados() {
       </div>
 
       {/* Filtros */}
-      <form
-        onSubmit={generar}
-        className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8"
-      >
+      <form onSubmit={generar} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-              Desde
-            </label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Desde</label>
             <input
               type="date"
               value={desde}
@@ -237,9 +223,7 @@ export default function AdminConsolidados() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-              Hasta
-            </label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Hasta</label>
             <input
               type="date"
               value={hasta}
@@ -249,9 +233,7 @@ export default function AdminConsolidados() {
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-              Estado
-            </label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Estado</label>
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
@@ -263,9 +245,7 @@ export default function AdminConsolidados() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
-              Tipo de Soporte
-            </label>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Tipo de Soporte</label>
             <select
               value={filtroTipoSoporte}
               onChange={(e) => setFiltroTipoSoporte(e.target.value)}
@@ -290,7 +270,6 @@ export default function AdminConsolidados() {
       {/* Resultados */}
       {generado && (
         <>
-          {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             <div className="bg-brand-700 text-white rounded-xl p-5 shadow-sm">
               <div className="text-3xl font-bold">{total}</div>
@@ -310,22 +289,6 @@ export default function AdminConsolidados() {
             </div>
           </div>
 
-          {/* Por tipo */}
-          {Object.keys(porTipo).length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">Por tipo de inscripción</h3>
-              <div className="flex flex-wrap gap-3">
-                {Object.entries(porTipo).map(([tipo, count]) => (
-                  <div key={tipo} className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm">
-                    <span className="font-semibold text-brand-700">{count}</span>
-                    <span className="text-slate-600 ml-2">{tipo}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tabla */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
               <span className="text-sm font-semibold text-slate-700">
@@ -370,7 +333,7 @@ export default function AdminConsolidados() {
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      {['N° Caso', 'Nombre', 'Correo', 'Tipo', 'N° Inscripción', 'Tipo de Soporte', 'Estado', 'Fecha', 'Tiempo Resolución'].map((h) => (
+                      {['N° Caso', 'Nombre', 'Correo', 'Tipo de Soporte', 'Estado', 'Fecha', 'Tiempo Resolución'].map((h) => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wide whitespace-nowrap">
                           {h}
                         </th>
@@ -383,8 +346,6 @@ export default function AdminConsolidados() {
                         <td className="px-4 py-3 font-semibold text-brand-700 whitespace-nowrap">{c.caso_numero}</td>
                         <td className="px-4 py-3 text-slate-800">{c.nombre}</td>
                         <td className="px-4 py-3 text-slate-600">{c.correo}</td>
-                        <td className="px-4 py-3 text-slate-600">{c.tipo_usuario}</td>
-                        <td className="px-4 py-3 text-slate-600">{c.numero_id}</td>
                         <td className="px-4 py-3 text-slate-600">{c.tipo_soporte}</td>
                         <td className="px-4 py-3"><EstadoBadge estado={c.estado} /></td>
                         <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{formatDate(c.created_at)}</td>

@@ -4,6 +4,7 @@ interface Props {
   mensajes: MensajeCaso[]
   perspectiva?: 'usuario' | 'admin'
   resolvedAt?: string
+  labelSoporte?: string
 }
 
 function formatDate(iso: string) {
@@ -13,7 +14,7 @@ function formatDate(iso: string) {
   })
 }
 
-export default function MensajeThread({ mensajes, perspectiva = 'usuario', resolvedAt }: Props) {
+export default function MensajeThread({ mensajes, perspectiva = 'usuario', resolvedAt, labelSoporte = 'Soporte Financiero' }: Props) {
   if (mensajes.length === 0) {
     return (
       <p className="text-slate-500 text-sm italic text-center py-6">
@@ -53,7 +54,7 @@ export default function MensajeThread({ mensajes, perspectiva = 'usuario', resol
             <span className="text-xs text-slate-400 px-1">
               {esMio
                 ? perspectiva === 'admin' ? 'Tú' : 'Usted'
-                : perspectiva === 'admin' ? 'Usuario' : 'Soporte Financiero'
+                : perspectiva === 'admin' ? 'Usuario' : labelSoporte
               } · {formatDate(m.created_at)}
             </span>
           </div>

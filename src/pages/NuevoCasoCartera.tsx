@@ -2,13 +2,6 @@ import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { getUserEmail } from '../lib/userSession'
 
-const TIPOS_USUARIO = [
-  'Empresarial',
-  'Individual',
-]
-
-const SIN_ID = ['Conciliaciones Bancarias', 'Reportes', 'Link de Pago']
-
 const TIPOS_SOPORTE = [
   'Inscripciones',
   'Comprobantes de Ingreso',
@@ -23,36 +16,32 @@ const TIPOS_SOPORTE = [
 
 interface FormData {
   nombre: string
-  tipo_usuario: string
-  numero_id: string
   correo: string
   tipo_soporte: string
   descripcion: string
 }
 
-const EMPTY: FormData = {
+const emptyForm = (): FormData => ({
   nombre: '',
-  tipo_usuario: '',
-  numero_id: '',
-  correo: '',
+  correo: getUserEmail() ?? '',
   tipo_soporte: '',
   descripcion: '',
-}
+})
 
 async function generarCasoNumero(): Promise<string> {
   const { data, error } = await supabase
-    .from('casos_soporte')
+    .from('casos_cartera')
     .select('caso_numero')
     .order('caso_numero', { ascending: false })
     .limit(1)
   if (error) throw error
-  if (!data || data.length === 0) return 'CASO-00001'
-  const num = parseInt(data[0].caso_numero.replace('CASO-', ''), 10)
-  return `CASO-${String(num + 1).padStart(5, '0')}`
+  if (!data || data.length === 0) return 'CAR-00001'
+  const num = parseInt(data[0].caso_numero.replace('CAR-', ''), 10)
+  return `CAR-${String(num + 1).padStart(5, '0')}`
 }
 
-export default function NuevoCaso() {
-  const [form, setForm] = useState<FormData>(() => ({ ...EMPTY, correo: getUserEmail() ?? '' }))
+export default function NuevoCasoCartera() {
+  const [form, setForm] = useState<FormData>(emptyForm)
   const [loading, setLoading] = useState(false)
   const [casoCreado, setCasoCreado] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -85,11 +74,9 @@ export default function NuevoCaso() {
       let caso_numero = await generarCasoNumero()
       let insertError = null
       for (let intento = 0; intento < 3; intento++) {
-        const { error } = await supabase.from('casos_soporte').insert({
+        const { error } = await supabase.from('casos_cartera').insert({
           caso_numero,
           nombre: form.nombre,
-          tipo_usuario: form.tipo_usuario,
-          numero_id: form.numero_id,
           correo: form.correo.toLowerCase().trim(),
           tipo_soporte: form.tipo_soporte,
           descripcion: form.descripcion,
@@ -106,7 +93,7 @@ export default function NuevoCaso() {
       }
       if (insertError) throw insertError
       setCasoCreado(caso_numero)
-      setForm({ ...EMPTY, correo: getUserEmail() ?? '' })
+      setForm(emptyForm())
       setFile(null)
     } catch (err: unknown) {
       const msg =
@@ -140,7 +127,7 @@ export default function NuevoCaso() {
               Crear otro caso
             </button>
             <a
-              href="/mis-casos"
+              href="/cartera/mis-casos"
               className="px-5 py-2.5 border border-brand-700 text-brand-700 rounded-lg font-medium hover:bg-brand-50 transition-colors"
             >
               Ver mis casos
@@ -154,9 +141,9 @@ export default function NuevoCaso() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-brand-800">Radicar Nuevo Caso</h1>
+        <h1 className="text-2xl font-bold text-brand-800">Radicar Nuevo Caso — Cartera</h1>
         <p className="text-slate-500 mt-1 text-sm">
-          Completa el formulario y nuestro equipo financiero te responderá a la brevedad.
+          Completa el formulario y nuestro equipo de cartera te responderá a la brevedad.
         </p>
       </div>
 
@@ -167,7 +154,7 @@ export default function NuevoCaso() {
         {/* Nombre */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Nombre Completo de quien solicita Soporte <span className="text-red-500">*</span>
+            Nombre Completo <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -204,15 +191,7 @@ export default function NuevoCaso() {
           <select
             name="tipo_soporte"
             value={form.tipo_soporte}
-            onChange={(e) => {
-              const val = e.target.value
-              setForm((f) => ({
-                ...f,
-                tipo_soporte: val,
-                tipo_usuario: val !== 'Inscripciones' ? '' : f.tipo_usuario,
-                numero_id: SIN_ID.includes(val) ? '' : f.numero_id,
-              }))
-            }}
+            onChange={handleChange}
             required
             className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
           >
@@ -224,47 +203,6 @@ export default function NuevoCaso() {
             ))}
           </select>
         </div>
-
-        {/* Tipo de inscripción — solo visible si tipo_soporte es Inscripciones */}
-        {form.tipo_soporte === 'Inscripciones' && (
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Tipo de Inscripción <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="tipo_usuario"
-              value={form.tipo_usuario}
-              onChange={handleChange}
-              required
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
-            >
-              <option value="">Seleccionar...</option>
-              {TIPOS_USUARIO.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* ID */}
-        {!SIN_ID.includes(form.tipo_soporte) && (
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              ID <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="numero_id"
-              value={form.numero_id}
-              onChange={handleChange}
-              required
-              placeholder="Ej. #356"
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-            />
-          </div>
-        )}
 
         {/* Descripción */}
         <div>

@@ -3,23 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
-import { isAdminAuthenticated, setAdminAuthenticated, clearAdminAuth } from '../lib/adminAuth'
-import type { CasoSoporte, MensajeCaso } from '../types'
+import { isAdminCarteraAuthenticated, setAdminCarteraAuthenticated, clearAdminCarteraAuth } from '../lib/adminAuthCartera'
+import type { CasoCartera, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD as string
-
-const SIN_ID = ['Conciliaciones Bancarias', 'Reportes', 'Link de Pago']
-
-const ID_LABEL: Record<string, string> = {
-  'Inscripciones': 'N° Inscripción',
-  'Comprobantes de Ingreso': 'ID del Comprobante de Ingreso',
-  'Acuerdo de pago': 'ID del Acuerdo de pago',
-  'Ordenes de Trabajo': 'ID de la Orden de Trabajo',
-  'Comprobante de Egreso': 'ID del Comprobante de Egreso',
-  'Otros': 'ID',
-}
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD_CARTERA as string
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
@@ -32,17 +21,17 @@ interface Stats {
   cerrado: number
 }
 
-export default function Admin() {
+export default function AdminCartera() {
   const navigate = useNavigate()
-  const [authenticated, setAuthenticated] = useState(isAdminAuthenticated)
+  const [authenticated, setAuthenticated] = useState(isAdminCarteraAuthenticated)
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState(false)
 
-  const [casos, setCasos] = useState<CasoSoporte[]>([])
+  const [casos, setCasos] = useState<CasoCartera[]>([])
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState<Stats>({ total: 0, pendiente: 0, proceso: 0, cerrado: 0 })
 
-  const [selectedCaso, setSelectedCaso] = useState<CasoSoporte | null>(null)
+  const [selectedCaso, setSelectedCaso] = useState<CasoCartera | null>(null)
   const [mensajes, setMensajes] = useState<MensajeCaso[]>([])
   const [loadingMensajes, setLoadingMensajes] = useState(false)
   const [adminMsg, setAdminMsg] = useState('')
@@ -74,7 +63,7 @@ export default function Admin() {
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('casos_soporte')
+        .from('casos_cartera')
         .select('*')
         .order('created_at', { ascending: false })
       if (error) throw error
@@ -94,12 +83,12 @@ export default function Admin() {
   function suscribirALista() {
     if (listChannelRef.current) supabase.removeChannel(listChannelRef.current)
     const channel = supabase
-      .channel('admin-lista-casos')
+      .channel('cartera-admin-lista-casos')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'casos_soporte' },
+        { event: 'INSERT', schema: 'public', table: 'casos_cartera' },
         (payload) => {
-          const nuevo = payload.new as CasoSoporte
+          const nuevo = payload.new as CasoCartera
           playNotification()
           setCasos((prev) => [nuevo, ...prev])
           setStats((s) => ({ ...s, total: s.total + 1, pendiente: s.pendiente + 1 }))
@@ -123,13 +112,13 @@ export default function Admin() {
     try {
       if (selectedCaso) {
         const { data: msgs } = await supabase
-          .from('mensajes_casos')
+          .from('mensajes_cartera')
           .select('*')
           .eq('caso_id', selectedCaso.id)
           .order('created_at', { ascending: true })
         setMensajes(msgs ?? [])
         const { data: casoActualizado } = await supabase
-          .from('casos_soporte')
+          .from('casos_cartera')
           .select('*')
           .eq('id', selectedCaso.id)
           .single()
@@ -145,7 +134,7 @@ export default function Admin() {
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     if (password === ADMIN_PASSWORD) {
-      setAdminAuthenticated()
+      setAdminCarteraAuthenticated()
       setAuthenticated(true)
       setAuthError(false)
     } else {
@@ -160,13 +149,13 @@ export default function Admin() {
     }
   }
 
-  function suscribirACaso(caso: CasoSoporte) {
+  function suscribirACaso(caso: CasoCartera) {
     cancelarSuscripcion()
     const channel = supabase
-      .channel(`admin-caso-${caso.id}`)
+      .channel(`cartera-admin-caso-${caso.id}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'mensajes_casos', filter: `caso_id=eq.${caso.id}` },
+        { event: 'INSERT', schema: 'public', table: 'mensajes_cartera', filter: `caso_id=eq.${caso.id}` },
         (payload) => {
           const nuevo = payload.new as MensajeCaso
           if (nuevo.autor === 'usuario') playNotification()
@@ -178,9 +167,9 @@ export default function Admin() {
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'casos_soporte', filter: `id=eq.${caso.id}` },
+        { event: 'UPDATE', schema: 'public', table: 'casos_cartera', filter: `id=eq.${caso.id}` },
         (payload) => {
-          const updated = payload.new as CasoSoporte
+          const updated = payload.new as CasoCartera
           setSelectedCaso(updated)
           setCasos((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
         },
@@ -189,7 +178,7 @@ export default function Admin() {
     channelRef.current = channel
   }
 
-  async function abrirCaso(caso: CasoSoporte) {
+  async function abrirCaso(caso: CasoCartera) {
     setSelectedCaso(caso)
     setMensajes([])
     setAdminMsg('')
@@ -198,24 +187,21 @@ export default function Admin() {
     setLoadingMensajes(true)
 
     try {
-      // Auto-change to 'proceso' if still 'pendiente'
       if (caso.estado === 'pendiente') {
         const { data: updated, error: updateErr } = await supabase
-          .from('casos_soporte')
+          .from('casos_cartera')
           .update({ estado: 'proceso', updated_at: new Date().toISOString() })
           .eq('id', caso.id)
           .select()
           .single()
         if (updateErr) throw updateErr
         setSelectedCaso(updated)
-        setCasos((prev) =>
-          prev.map((c) => (c.id === caso.id ? updated : c)),
-        )
+        setCasos((prev) => prev.map((c) => (c.id === caso.id ? updated : c)))
         setStats((s) => ({ ...s, pendiente: s.pendiente - 1, proceso: s.proceso + 1 }))
       }
 
       const { data, error: msgErr } = await supabase
-        .from('mensajes_casos')
+        .from('mensajes_cartera')
         .select('*')
         .eq('caso_id', caso.id)
         .order('created_at', { ascending: true })
@@ -245,8 +231,7 @@ export default function Admin() {
         adjunto_url = urlData.publicUrl
       }
 
-      // 1. Insert message — si esto falla sí es un error real
-      const { error: msgErr } = await supabase.from('mensajes_casos').insert({
+      const { error: msgErr } = await supabase.from('mensajes_cartera').insert({
         caso_id: selectedCaso.id,
         autor: 'admin',
         mensaje: adminMsg.trim(),
@@ -254,20 +239,18 @@ export default function Admin() {
       })
       if (msgErr) throw msgErr
 
-      // 2. Limpiar campos y recargar mensajes inmediatamente
       setAdminMsg('')
       setAdminFile(null)
       if (adminFileRef.current) adminFileRef.current.value = ''
       const { data: msgs } = await supabase
-        .from('mensajes_casos')
+        .from('mensajes_cartera')
         .select('*')
         .eq('caso_id', selectedCaso.id)
         .order('created_at', { ascending: true })
       setMensajes(msgs ?? [])
 
-      // 3. Actualizar estado según lo que eligió el admin
       const { data: updated, error: updateErr } = await supabase
-        .from('casos_soporte')
+        .from('casos_cartera')
         .update({ estado: nuevoEstado, updated_at: new Date().toISOString() })
         .eq('id', selectedCaso.id)
         .select()
@@ -289,7 +272,6 @@ export default function Admin() {
           }
         })
       } else if (updateErr) {
-        console.warn('No se pudo actualizar el estado:', updateErr.message)
         setSendError(`Mensaje enviado, pero el estado no se pudo actualizar: ${updateErr.message}`)
       }
     } catch (err: unknown) {
@@ -300,7 +282,7 @@ export default function Admin() {
     }
   }
 
-  // ─── Login screen ───────────────────────────────────────────────────────────
+  // ─── Login ───────────────────────────────────────────────────────────────────
   if (!authenticated) {
     return (
       <div className="max-w-sm mx-auto py-20">
@@ -309,7 +291,7 @@ export default function Admin() {
             Acceso Administrativo
           </h2>
           <p className="text-slate-500 text-sm text-center mb-6">
-            Área restringida — Dirección Financiera
+            Área restringida — Cartera
           </p>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
@@ -336,9 +318,9 @@ export default function Admin() {
     )
   }
 
-  // ─── Dashboard ──────────────────────────────────────────────────────────────
+  // ─── Dashboard ───────────────────────────────────────────────────────────────
   const casosFiltrados = casos
-    .filter((c) => filtroEstado === 'todos' || c.estado === (filtroEstado as CasoSoporte['estado']))
+    .filter((c) => filtroEstado === 'todos' || c.estado === (filtroEstado as CasoCartera['estado']))
     .filter((c) => {
       if (!busqueda.trim()) return true
       const q = busqueda.toLowerCase()
@@ -355,18 +337,18 @@ export default function Admin() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-brand-800">Panel de Administración</h1>
-          <p className="text-slate-500 text-sm mt-1">Gestión de casos — Dirección Financiera</p>
+          <h1 className="text-2xl font-bold text-brand-800">Panel de Administración — Cartera</h1>
+          <p className="text-slate-500 text-sm mt-1">Gestión de casos — Cartera</p>
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => navigate('/admin/consolidados')}
+            onClick={() => navigate('/admin/cartera/consolidados')}
             className="text-sm text-white bg-brand-700 hover:bg-brand-800 px-3 py-1.5 rounded-lg transition-colors font-medium"
           >
             Consolidados
           </button>
           <button
-            onClick={() => { clearAdminAuth(); navigate('/admin') }}
+            onClick={() => { clearAdminCarteraAuth(); navigate('/admin') }}
             className="text-sm text-slate-500 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
           >
             Cerrar sesión
@@ -374,7 +356,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Stats cards */}
+      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
           { label: 'Total', value: stats.total, color: 'bg-brand-700 text-white' },
@@ -407,7 +389,6 @@ export default function Admin() {
             </button>
           </div>
 
-          {/* Case info */}
           <div className="px-6 py-4 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div>
               <span className="text-slate-500">Nombre:</span>{' '}
@@ -417,20 +398,6 @@ export default function Admin() {
               <span className="text-slate-500">Tipo de Soporte:</span>{' '}
               <span className="font-medium">{selectedCaso.tipo_soporte}</span>
             </div>
-            {selectedCaso.tipo_soporte === 'Inscripciones' && (
-              <div>
-                <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
-                <span className="font-medium">{selectedCaso.tipo_usuario}</span>
-              </div>
-            )}
-            {!SIN_ID.includes(selectedCaso.tipo_soporte) && selectedCaso.numero_id && (
-              <div>
-                <span className="text-slate-500">
-                  {ID_LABEL[selectedCaso.tipo_soporte] ?? 'ID'}:
-                </span>{' '}
-                <span className="font-medium">{selectedCaso.numero_id}</span>
-              </div>
-            )}
             <div>
               <span className="text-slate-500">Correo:</span>{' '}
               <span className="font-medium">{selectedCaso.correo}</span>
@@ -457,7 +424,6 @@ export default function Admin() {
             )}
           </div>
 
-          {/* Messages */}
           <div className="px-6 py-5">
             <h3 className="text-sm font-semibold text-slate-700 mb-4">Historial de mensajes</h3>
             {loadingMensajes ? (
@@ -466,12 +432,12 @@ export default function Admin() {
               <MensajeThread
                 mensajes={mensajes}
                 perspectiva="admin"
+                labelSoporte="Soporte Cartera"
                 resolvedAt={selectedCaso.estado === 'resuelto' ? selectedCaso.updated_at : undefined}
               />
             )}
           </div>
 
-          {/* Reply form (only if not resolved) */}
           {selectedCaso.estado !== 'resuelto' && (
             <form ref={adminFormRef} onSubmit={enviarMensajeAdmin} className="px-6 pb-6 flex flex-col gap-4">
               <textarea
@@ -489,7 +455,6 @@ export default function Admin() {
                 className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
               />
 
-              {/* Adjunto */}
               <div>
                 <input
                   ref={adminFileRef}
@@ -517,7 +482,6 @@ export default function Admin() {
                 )}
               </div>
 
-              {/* Estado selector */}
               <div className="flex items-center gap-6">
                 <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
                   Actualizar estado:
@@ -623,7 +587,7 @@ export default function Admin() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    {['N° Caso', 'Nombre', 'Correo', 'Tipo', 'Estado', 'Fecha'].map((h) => (
+                    {['N° Caso', 'Nombre', 'Correo', 'Tipo de Soporte', 'Estado', 'Fecha'].map((h) => (
                       <th
                         key={h}
                         className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wide"
@@ -646,7 +610,7 @@ export default function Admin() {
                       <td className="px-4 py-3 font-semibold text-brand-700">{c.caso_numero}</td>
                       <td className="px-4 py-3 text-slate-800">{c.nombre}</td>
                       <td className="px-4 py-3 text-slate-600">{c.correo}</td>
-                      <td className="px-4 py-3 text-slate-600">{c.tipo_usuario}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.tipo_soporte}</td>
                       <td className="px-4 py-3">
                         <EstadoBadge estado={c.estado} />
                       </td>
@@ -685,7 +649,7 @@ export default function Admin() {
         </>
       )}
 
-      {/* FAB — visible una vez autenticado */}
+      {/* FAB */}
       {authenticated && (
         <button
           onClick={recargar}

@@ -7,13 +7,13 @@ export default function Home() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (getUserEmail()) navigate('/mis-casos', { replace: true })
+    if (getUserEmail()) navigate('/selector', { replace: true })
   }, [navigate])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setUserEmail(correo)
-    navigate('/mis-casos')
+    navigate('/selector')
   }
 
   return (

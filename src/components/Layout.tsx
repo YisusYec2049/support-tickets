@@ -27,19 +27,18 @@ export default function Layout() {
             <NavLink to="/" className={linkClass} end>
               Home
             </NavLink>
-            <NavLink to="/admin" className={linkClass} end>
+            <NavLink to="/admin" className={linkClass}>
               Administración
-            </NavLink>
-            <NavLink to="/admin/consolidados" className={linkClass}>
-              Consolidados
             </NavLink>
           </nav>
         </div>
       </header>
 
       {/* Page content */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8">
-        <Outlet />
+      <main className="flex-1 w-full bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+          <Outlet />
+        </div>
       </main>
 
       {/* Footer */}
