@@ -108,7 +108,7 @@ export default function AdminCartera() {
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
+    if (password.trim() === ADMIN_PASSWORD.trim()) {
       setAdminCarteraAuthenticated()
       setAuthenticated(true)
       setAuthError(false)

@@ -146,7 +146,7 @@ export default function SuperAdmin() {
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
+    if (password.trim() === ADMIN_PASSWORD.trim()) {
       setSuperAdminAuthenticated()
       setAuthenticated(true)
       setAuthError(false)

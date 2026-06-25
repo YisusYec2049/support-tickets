@@ -119,7 +119,7 @@ export default function Admin() {
 
   function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
+    if (password.trim() === ADMIN_PASSWORD.trim()) {
       setAdminAuthenticated()
       setAuthenticated(true)
       setAuthError(false)
