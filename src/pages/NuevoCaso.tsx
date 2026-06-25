@@ -196,6 +196,27 @@ export default function NuevoCaso() {
           />
         </div>
 
+        {/* Tipo de inscripción */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Tipo de Inscripción <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="tipo_usuario"
+            value={form.tipo_usuario}
+            onChange={handleChange}
+            required
+            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
+          >
+            <option value="">Seleccionar...</option>
+            {TIPOS_USUARIO.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Tipo de soporte */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -209,7 +230,6 @@ export default function NuevoCaso() {
               setForm((f) => ({
                 ...f,
                 tipo_soporte: val,
-                tipo_usuario: val !== 'Inscripciones' ? '' : f.tipo_usuario,
                 numero_id: SIN_ID.includes(val) ? '' : f.numero_id,
               }))
             }}
@@ -224,29 +244,6 @@ export default function NuevoCaso() {
             ))}
           </select>
         </div>
-
-        {/* Tipo de inscripción — solo visible si tipo_soporte es Inscripciones */}
-        {form.tipo_soporte === 'Inscripciones' && (
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Tipo de Inscripción <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="tipo_usuario"
-              value={form.tipo_usuario}
-              onChange={handleChange}
-              required
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
-            >
-              <option value="">Seleccionar...</option>
-              {TIPOS_USUARIO.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {/* ID */}
         {!SIN_ID.includes(form.tipo_soporte) && (
