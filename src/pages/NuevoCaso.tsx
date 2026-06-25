@@ -7,7 +7,6 @@ const TIPOS_USUARIO = [
   'Individual',
 ]
 
-const SIN_ID = ['Conciliaciones Bancarias', 'Reportes', 'Link de Pago']
 
 const TIPOS_SOPORTE = [
   'Inscripciones',
