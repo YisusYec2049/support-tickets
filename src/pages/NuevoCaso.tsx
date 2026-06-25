@@ -296,22 +296,29 @@ export default function NuevoCaso() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xls,.xlsx"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
           />
           {file && (
             <div className="relative inline-block mt-3">
-              <img
-                src={URL.createObjectURL(file)}
-                alt="Vista previa"
-                className="max-h-48 rounded-lg border border-slate-200 object-contain"
-              />
+              {file.type.startsWith('image/') ? (
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="Vista previa"
+                  className="max-h-48 rounded-lg border border-slate-200 object-contain"
+                />
+              ) : (
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-700">
+                  <span>📄</span>
+                  <span className="font-medium">{file.name}</span>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = '' }}
-                className="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow transition-colors"
-                title="Quitar imagen"
+                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow transition-colors"
+                title="Quitar archivo"
               >
                 ✕
               </button>
