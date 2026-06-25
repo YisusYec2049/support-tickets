@@ -1,4 +1,5 @@
 import type { MensajeCaso } from '../types'
+import FileAttachment from './FileAttachment'
 
 interface Props {
   mensajes: MensajeCaso[]
@@ -42,13 +43,12 @@ export default function MensajeThread({ mensajes, perspectiva = 'usuario', resol
             >
               {m.mensaje}
               {m.adjunto_url && (
-                <a href={m.adjunto_url} target="_blank" rel="noopener noreferrer" className="block mt-2">
-                  <img
-                    src={m.adjunto_url}
-                    alt="Adjunto"
-                    className="max-h-48 rounded-lg object-contain border border-white/20 hover:opacity-90 transition-opacity"
+                <div className="mt-2">
+                  <FileAttachment
+                    url={m.adjunto_url}
+                    imageClassName="max-h-48 rounded-lg object-contain border border-white/20 hover:opacity-90 transition-opacity"
                   />
-                </a>
+                </div>
               )}
             </div>
             <span className="text-xs text-slate-400 px-1">

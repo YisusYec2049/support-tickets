@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
+import FileAttachment from '../components/FileAttachment'
 import { isSuperAdminAuthenticated, setSuperAdminAuthenticated, clearSuperAdminAuth } from '../lib/superAdminAuth'
 import type { CasoUnificado, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
@@ -346,9 +347,7 @@ export default function SuperAdmin() {
             {selectedCaso.adjunto_url && (
               <div className="sm:col-span-2">
                 <span className="text-slate-500 block mb-2">Adjunto:</span>
-                <a href={selectedCaso.adjunto_url} target="_blank" rel="noopener noreferrer">
-                  <img src={selectedCaso.adjunto_url} alt="Adjunto" className="max-h-64 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity" />
-                </a>
+                <FileAttachment url={selectedCaso.adjunto_url} imageClassName="max-h-64 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity" />
               </div>
             )}
           </div>

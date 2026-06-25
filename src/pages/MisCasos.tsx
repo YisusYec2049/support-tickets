@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
+import FileAttachment from '../components/FileAttachment'
 import { getUserEmail, clearUserEmail } from '../lib/userSession'
 import type { CasoSoporte, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
@@ -293,13 +294,8 @@ export default function MisCasos() {
             </div>
             {selectedCaso.adjunto_url && (
               <div className="sm:col-span-2">
-                <a href={selectedCaso.adjunto_url} target="_blank" rel="noopener noreferrer">
-                  <img
-                    src={selectedCaso.adjunto_url}
-                    alt="Adjunto"
-                    className="max-h-48 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity"
-                  />
-                </a>
+                <span className="text-slate-500 block mb-2">Adjunto:</span>
+                <FileAttachment url={selectedCaso.adjunto_url} />
               </div>
             )}
           </div>

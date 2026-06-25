@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
+import FileAttachment from '../components/FileAttachment'
 import { isAdminAuthenticated, setAdminAuthenticated, clearAdminAuth } from '../lib/adminAuth'
 import PasswordInput from '../components/PasswordInput'
 import type { CasoSoporte, MensajeCaso } from '../types'
@@ -419,36 +420,7 @@ export default function Admin() {
             {selectedCaso.adjunto_url && (
               <div className="sm:col-span-2">
                 <span className="text-slate-500 block mb-2">Adjunto:</span>
-                {(() => {
-                  const ext = selectedCaso.adjunto_url.split('.').pop()?.toLowerCase() ?? ''
-                  if (['png', 'jpg', 'jpeg'].includes(ext)) {
-                    return (
-                      <a href={selectedCaso.adjunto_url} target="_blank" rel="noopener noreferrer">
-                        <img
-                          src={selectedCaso.adjunto_url}
-                          alt="Adjunto"
-                          className="max-h-64 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity"
-                        />
-                      </a>
-                    )
-                  }
-                  if (ext === 'pdf') {
-                    return (
-                      <iframe
-                        src={selectedCaso.adjunto_url}
-                        className="w-full h-96 rounded-lg border border-slate-200"
-                        title="Adjunto PDF"
-                      />
-                    )
-                  }
-                  return (
-                    <iframe
-                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedCaso.adjunto_url)}`}
-                      className="w-full h-96 rounded-lg border border-slate-200"
-                      title="Adjunto"
-                    />
-                  )
-                })()}
+                <FileAttachment url={selectedCaso.adjunto_url} imageClassName="max-h-64 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity" />
               </div>
             )}
           </div>
