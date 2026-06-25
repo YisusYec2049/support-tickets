@@ -25,6 +25,7 @@ interface FormData {
   nombre: string
   tipo_usuario: string
   numero_id: string
+  nombre_inscripcion: string
   correo: string
   tipo_soporte: string
   descripcion: string
@@ -34,6 +35,7 @@ const EMPTY: FormData = {
   nombre: '',
   tipo_usuario: '',
   numero_id: '',
+  nombre_inscripcion: '',
   correo: '',
   tipo_soporte: '',
   descripcion: '',
@@ -90,6 +92,7 @@ export default function NuevoCaso() {
           nombre: form.nombre,
           tipo_usuario: form.tipo_usuario,
           numero_id: form.numero_id,
+          nombre_inscripcion: form.nombre_inscripcion,
           correo: form.correo.toLowerCase().trim(),
           tipo_soporte: form.tipo_soporte,
           descripcion: form.descripcion,
@@ -217,6 +220,38 @@ export default function NuevoCaso() {
           </select>
         </div>
 
+        {/* ID */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            ID <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="numero_id"
+            value={form.numero_id}
+            onChange={handleChange}
+            required
+            placeholder="Ej. #356"
+            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Nombre de Inscripción */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Nombre de Inscripción <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="nombre_inscripcion"
+            value={form.nombre_inscripcion}
+            onChange={handleChange}
+            required
+            placeholder="Ej. Carlos Andrés Ramírez Molina"
+            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
+        </div>
+
         {/* Tipo de soporte */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -225,14 +260,7 @@ export default function NuevoCaso() {
           <select
             name="tipo_soporte"
             value={form.tipo_soporte}
-            onChange={(e) => {
-              const val = e.target.value
-              setForm((f) => ({
-                ...f,
-                tipo_soporte: val,
-                numero_id: SIN_ID.includes(val) ? '' : f.numero_id,
-              }))
-            }}
+            onChange={handleChange}
             required
             className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
           >
@@ -244,24 +272,6 @@ export default function NuevoCaso() {
             ))}
           </select>
         </div>
-
-        {/* ID */}
-        {!SIN_ID.includes(form.tipo_soporte) && (
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              ID <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="numero_id"
-              value={form.numero_id}
-              onChange={handleChange}
-              required
-              placeholder="Ej. #356"
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-            />
-          </div>
-        )}
 
         {/* Descripción */}
         <div>

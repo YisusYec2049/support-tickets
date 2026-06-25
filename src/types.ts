@@ -4,6 +4,7 @@ export interface CasoSoporte {
   nombre: string
   tipo_usuario: string
   numero_id: string
+  nombre_inscripcion: string
   correo: string
   tipo_soporte: string
   descripcion: string

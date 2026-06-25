@@ -9,6 +9,15 @@ export default function Layout() {
         : 'text-blue-100 hover:text-white hover:bg-brand-700'
     }`
 
+  const path = location.pathname
+  const titulo =
+    path.startsWith('/cartera') || path.startsWith('/admin/cartera')
+      ? 'Mesa de Ayuda Cartera'
+      : path.startsWith('/mis-casos') || path.startsWith('/nuevo-caso') ||
+        path.startsWith('/admin/financiero') || path.startsWith('/admin/consolidados')
+      ? 'Mesa de Ayuda Sistema Financiero'
+      : 'Mesa de Ayuda'
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -17,7 +26,7 @@ export default function Layout() {
           <Link to="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
             <div className="flex flex-col">
               <span className="text-white font-bold text-xl leading-tight">
-                Mesa de Ayuda Financiera
+                {titulo}
               </span>
               <span className="text-blue-200 text-sm font-medium tracking-wide">
                 UdeCataluña
