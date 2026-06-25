@@ -3,20 +3,19 @@ import { supabase } from '../lib/supabase'
 import { getUserEmail } from '../lib/userSession'
 
 const TIPOS_SOPORTE = [
-  'Inscripciones',
-  'Comprobantes de Ingreso',
-  'Acuerdo de pago',
-  'Ordenes de Trabajo',
-  'Comprobante de Egreso',
-  'Conciliaciones Bancarias',
-  'Reportes',
-  'Link de Pago',
-  'Otros',
+  'Fechas Cuotas',
+  'Valores Cuotas',
+  'Pago mal aplicado',
+  'Pago cruzado con otro cliente',
+  'Otro',
 ]
 
 interface FormData {
   nombre: string
   correo: string
+  tipo_usuario: string
+  numero_id: string
+  nombre_inscripcion: string
   tipo_soporte: string
   descripcion: string
 }
@@ -24,6 +23,9 @@ interface FormData {
 const emptyForm = (): FormData => ({
   nombre: '',
   correo: getUserEmail() ?? '',
+  tipo_usuario: '',
+  numero_id: '',
+  nombre_inscripcion: '',
   tipo_soporte: '',
   descripcion: '',
 })
@@ -78,6 +80,9 @@ export default function NuevoCasoCartera() {
           caso_numero,
           nombre: form.nombre,
           correo: form.correo.toLowerCase().trim(),
+          tipo_usuario: form.tipo_usuario,
+          numero_id: form.numero_id,
+          nombre_inscripcion: form.nombre_inscripcion,
           tipo_soporte: form.tipo_soporte,
           descripcion: form.descripcion,
           estado: 'pendiente',
@@ -151,10 +156,10 @@ export default function NuevoCasoCartera() {
         onSubmit={handleSubmit}
         className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6"
       >
-        {/* Nombre */}
+        {/* Nombre del Solicitante */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Nombre Completo <span className="text-red-500">*</span>
+            Nombre del Solicitante <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -167,7 +172,7 @@ export default function NuevoCasoCartera() {
           />
         </div>
 
-        {/* Correo */}
+        {/* Correo electrónico */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
             Correo electrónico <span className="text-red-500">*</span>
@@ -179,6 +184,56 @@ export default function NuevoCasoCartera() {
             onChange={handleChange}
             required
             placeholder="usuario@ejemplo.com"
+            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Tipo de inscripción */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Tipo de Inscripción <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="tipo_usuario"
+            value={form.tipo_usuario}
+            onChange={handleChange}
+            required
+            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
+          >
+            <option value="">Seleccionar...</option>
+            <option value="Empresarial">Empresarial</option>
+            <option value="Individual">Individual</option>
+          </select>
+        </div>
+
+        {/* No de Inscripción */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            N° de Inscripción <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="numero_id"
+            value={form.numero_id}
+            onChange={handleChange}
+            required
+            placeholder="Ej. 2024-001234"
+            className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Nombre de la inscripción */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Nombre de la Inscripción <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="nombre_inscripcion"
+            value={form.nombre_inscripcion}
+            onChange={handleChange}
+            required
+            placeholder="Ej. Diplomado en Gestión Financiera"
             className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           />
         </div>
@@ -204,10 +259,10 @@ export default function NuevoCasoCartera() {
           </select>
         </div>
 
-        {/* Descripción */}
+        {/* Descripción del Caso */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Descripción del caso <span className="text-red-500">*</span>
+            Descripción del Caso <span className="text-red-500">*</span>
           </label>
           <textarea
             name="descripcion"

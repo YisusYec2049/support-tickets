@@ -367,12 +367,30 @@ export default function AdminCartera() {
               <span className="font-medium">{selectedCaso.nombre}</span>
             </div>
             <div>
-              <span className="text-slate-500">Tipo de Soporte:</span>{' '}
-              <span className="font-medium">{selectedCaso.tipo_soporte}</span>
-            </div>
-            <div>
               <span className="text-slate-500">Correo:</span>{' '}
               <span className="font-medium">{selectedCaso.correo}</span>
+            </div>
+            {selectedCaso.tipo_usuario && (
+              <div>
+                <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
+                <span className="font-medium">{selectedCaso.tipo_usuario}</span>
+              </div>
+            )}
+            {selectedCaso.numero_id && (
+              <div>
+                <span className="text-slate-500">N° de Inscripción:</span>{' '}
+                <span className="font-medium">{selectedCaso.numero_id}</span>
+              </div>
+            )}
+            {selectedCaso.nombre_inscripcion && (
+              <div className="sm:col-span-2">
+                <span className="text-slate-500">Nombre de la Inscripción:</span>{' '}
+                <span className="font-medium">{selectedCaso.nombre_inscripcion}</span>
+              </div>
+            )}
+            <div>
+              <span className="text-slate-500">Tipo de Soporte:</span>{' '}
+              <span className="font-medium">{selectedCaso.tipo_soporte}</span>
             </div>
             <div className="sm:col-span-2">
               <span className="text-slate-500">Descripción:</span>{' '}
