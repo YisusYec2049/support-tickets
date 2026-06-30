@@ -1,13 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
-import { isAdminCarteraAuthenticated, setAdminCarteraAuthenticated, clearAdminCarteraAuth } from '../lib/adminAuthCartera'
-import PasswordInput from '../components/PasswordInput'
 import { useNavigate } from 'react-router-dom'
 import EstadoBadge from '../components/EstadoBadge'
 import type { CasoCartera } from '../types'
-
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD_CARTERA as string
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
@@ -94,9 +90,14 @@ const TIPOS_SOPORTE = [
 
 export default function AdminConsolidadosCartera() {
   const navigate = useNavigate()
-  const [authenticated, setAuthenticated] = useState(isAdminCarteraAuthenticated)
-  const [password, setPassword] = useState('')
-  const [authError, setAuthError] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) navigate('/admin/cartera', { replace: true })
+      else setAuthChecked(true)
+    })
+  }, [navigate])
 
   const today = new Date().toISOString().slice(0, 10)
   const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -109,17 +110,6 @@ export default function AdminConsolidadosCartera() {
   const [casos, setCasos] = useState<CasoCartera[]>([])
   const [loading, setLoading] = useState(false)
   const [generado, setGenerado] = useState(false)
-
-  function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
-      setAdminCarteraAuthenticated()
-      setAuthenticated(true)
-      setAuthError(false)
-    } else {
-      setAuthError(true)
-    }
-  }
 
   async function generar(e: React.FormEvent) {
     e.preventDefault()
@@ -156,34 +146,10 @@ export default function AdminConsolidadosCartera() {
     resuelto: casos.filter((c) => c.estado === 'resuelto').length,
   }
 
-  // ─── Login ───────────────────────────────────────────────────────────────
-  if (!authenticated) {
-    return (
-      <div className="max-w-sm mx-auto py-20">
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
-          <h2 className="text-xl font-bold text-brand-800 mb-1 text-center">Acceso Administrativo</h2>
-          <p className="text-slate-500 text-sm text-center mb-6">Área restringida — Cartera</p>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <PasswordInput
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoFocus
-            />
-            {authError && <p className="text-red-600 text-xs">Contraseña incorrecta.</p>}
-            <button
-              type="submit"
-              className="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
-            >
-              Ingresar
-            </button>
-          </form>
-        </div>
-      </div>
-    )
+  if (!authChecked) {
+    return <div className="flex justify-center py-20 text-slate-400 text-sm">Verificando sesión...</div>
   }
 
-  // ─── Dashboard ───────────────────────────────────────────────────────────
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -199,7 +165,7 @@ export default function AdminConsolidadosCartera() {
             ← Panel de casos
           </button>
           <button
-            onClick={() => { clearAdminCarteraAuth(); navigate('/admin') }}
+            onClick={async () => { await supabase.auth.signOut(); navigate('/admin') }}
             className="text-sm text-slate-500 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
           >
             Cerrar sesión

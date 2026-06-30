@@ -1,13 +1,11 @@
-const KEY = 'admin_auth_cartera'
-
-export function isAdminCarteraAuthenticated(): boolean {
-  return sessionStorage.getItem(KEY) === 'true'
-}
-
-export function setAdminCarteraAuthenticated() {
-  sessionStorage.setItem(KEY, 'true')
-}
-
-export function clearAdminCarteraAuth() {
-  sessionStorage.removeItem(KEY)
+export function nombreToEmail(nombre: string): string {
+  return (
+    nombre
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/\s+/g, '.') +
+    '@cartera.com'
+  )
 }

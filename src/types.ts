@@ -47,9 +47,11 @@ export interface CasoCartera {
   tipo_usuario: string
   numero_id: string
   nombre_inscripcion: string
+  unidad_negocio: string
   tipo_soporte: string
   descripcion: string
   estado: 'pendiente' | 'proceso' | 'resuelto'
+  atendido_por?: string | null
   created_at: string
   updated_at: string
   adjunto_url?: string | null

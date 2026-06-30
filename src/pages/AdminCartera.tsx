@@ -4,13 +4,11 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
 import FileAttachment from '../components/FileAttachment'
-import { isAdminCarteraAuthenticated, setAdminCarteraAuthenticated, clearAdminCarteraAuth } from '../lib/adminAuthCartera'
+import { nombreToEmail } from '../lib/adminAuthCartera'
 import PasswordInput from '../components/PasswordInput'
 import type { CasoCartera, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
-
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD_CARTERA as string
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
@@ -25,9 +23,13 @@ interface Stats {
 
 export default function AdminCartera() {
   const navigate = useNavigate()
-  const [authenticated, setAuthenticated] = useState(isAdminCarteraAuthenticated)
+  const [authenticated, setAuthenticated] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [nombre, setNombre] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState(false)
+  const [loginLoading, setLoginLoading] = useState(false)
+  const [adminNombre, setAdminNombre] = useState('')
 
   const [casos, setCasos] = useState<CasoCartera[]>([])
   const [loading, setLoading] = useState(false)
@@ -45,6 +47,7 @@ export default function AdminCartera() {
   const adminFormRef = useRef<HTMLFormElement>(null)
 
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
+  const [filtroUnidad, setFiltroUnidad] = useState<string>('todos')
   const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
   const [animDir, setAnimDir] = useState<'right' | 'left'>('right')
@@ -58,6 +61,24 @@ export default function AdminCartera() {
       if (channelRef.current) supabase.removeChannel(channelRef.current)
       if (listChannelRef.current) supabase.removeChannel(listChannelRef.current)
     }
+  }, [])
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setAdminNombre(session.user.user_metadata?.nombre ?? '')
+        setAuthenticated(true)
+      }
+      setAuthLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setAuthenticated(false)
+        setAdminNombre('')
+      }
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
   const cargarCasos = useCallback(async () => {
@@ -107,14 +128,20 @@ export default function AdminCartera() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, cargarCasos])
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (password.trim() === ADMIN_PASSWORD.trim()) {
-      setAdminCarteraAuthenticated()
-      setAuthenticated(true)
-      setAuthError(false)
-    } else {
+    setLoginLoading(true)
+    setAuthError(false)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: nombreToEmail(nombre),
+      password: password.trim(),
+    })
+    setLoginLoading(false)
+    if (error || !data.session) {
       setAuthError(true)
+    } else {
+      setAdminNombre(data.user?.user_metadata?.nombre ?? nombre)
+      setAuthenticated(true)
     }
   }
 
@@ -166,7 +193,7 @@ export default function AdminCartera() {
       if (caso.estado === 'pendiente') {
         const { data: updated, error: updateErr } = await supabase
           .from('casos_cartera')
-          .update({ estado: 'proceso', updated_at: new Date().toISOString() })
+          .update({ estado: 'proceso', updated_at: new Date().toISOString(), atendido_por: adminNombre || null })
           .eq('id', caso.id)
           .select()
           .single()
@@ -259,6 +286,10 @@ export default function AdminCartera() {
   }
 
   // ─── Login ───────────────────────────────────────────────────────────────────
+  if (authLoading) {
+    return <div className="flex justify-center py-20 text-slate-400 text-sm">Verificando sesión...</div>
+  }
+
   if (!authenticated) {
     return (
       <div className="max-w-sm mx-auto py-20">
@@ -270,20 +301,29 @@ export default function AdminCartera() {
             Área restringida — Cartera
           </p>
           <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="text"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              required
+              autoFocus
+              placeholder="Nombre"
+              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            />
             <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              autoFocus
             />
             {authError && (
-              <p className="text-red-600 text-xs">Contraseña incorrecta. Intenta de nuevo.</p>
+              <p className="text-red-600 text-xs">Credenciales incorrectas. Intenta de nuevo.</p>
             )}
             <button
               type="submit"
-              className="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
+              disabled={loginLoading}
+              className="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm disabled:opacity-50"
             >
-              Ingresar
+              {loginLoading ? 'Verificando...' : 'Ingresar'}
             </button>
           </form>
         </div>
@@ -294,6 +334,7 @@ export default function AdminCartera() {
   // ─── Dashboard ───────────────────────────────────────────────────────────────
   const casosFiltrados = casos
     .filter((c) => filtroEstado === 'todos' || c.estado === (filtroEstado as CasoCartera['estado']))
+    .filter((c) => filtroUnidad === 'todos' || c.unidad_negocio === filtroUnidad)
     .filter((c) => {
       if (!busqueda.trim()) return true
       const q = busqueda.toLowerCase()
@@ -311,7 +352,9 @@ export default function AdminCartera() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-brand-800">Panel de Administración — Cartera</h1>
-          <p className="text-slate-500 text-sm mt-1">Gestión de casos — Cartera</p>
+          <p className="text-slate-500 text-sm mt-1">
+            Gestión de casos — Cartera{adminNombre ? ` · ${adminNombre}` : ''}
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -321,7 +364,7 @@ export default function AdminCartera() {
             Consolidados
           </button>
           <button
-            onClick={() => { clearAdminCarteraAuth(); navigate('/admin') }}
+            onClick={async () => { await supabase.auth.signOut(); navigate('/admin') }}
             className="text-sm text-slate-500 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
           >
             Cerrar sesión
@@ -401,6 +444,12 @@ export default function AdminCartera() {
               <span className="text-slate-500">Fecha:</span>{' '}
               <span className="font-medium">{formatDate(selectedCaso.created_at)}</span>
             </div>
+            {selectedCaso.atendido_por && (
+              <div>
+                <span className="text-slate-500">Atendido por:</span>{' '}
+                <span className="font-medium">{selectedCaso.atendido_por}</span>
+              </div>
+            )}
             {selectedCaso.adjunto_url && (
               <div className="sm:col-span-2">
                 <span className="text-slate-500 block mb-2">Adjunto:</span>
@@ -537,10 +586,32 @@ export default function AdminCartera() {
             )}
           </div>
 
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-slate-700">
               {casosFiltrados.length} caso{casosFiltrados.length !== 1 ? 's' : ''}
             </h2>
+            <div className="flex gap-2">
+              {[
+                { value: 'todos', label: 'Todas' },
+                { value: 'Diplomados', label: 'Diplomados' },
+                { value: 'Especializaciones', label: 'Especializaciones' },
+              ].map((f) => (
+                <button
+                  key={f.value}
+                  onClick={() => { setFiltroUnidad(f.value); setAnimDir('right'); setPagina(1) }}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold border active:scale-95 transition-all ${
+                    filtroUnidad === f.value
+                      ? 'bg-brand-700 text-white border-brand-700'
+                      : 'bg-white text-slate-600 border-slate-300 hover:border-brand-400'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end mb-4">
             <div className="flex gap-2">
               {[
                 { value: 'todos', label: 'Todos' },
@@ -572,7 +643,7 @@ export default function AdminCartera() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    {['N° Caso', 'Nombre', 'Correo', 'Tipo de Soporte', 'Estado', 'Fecha'].map((h) => (
+                    {['N° Caso', 'Nombre', 'Correo', 'Unidad', 'Tipo de Soporte', 'Atendido por', 'Estado', 'Fecha'].map((h) => (
                       <th
                         key={h}
                         className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wide"
@@ -595,7 +666,9 @@ export default function AdminCartera() {
                       <td className="px-4 py-3 font-semibold text-brand-700">{c.caso_numero}</td>
                       <td className="px-4 py-3 text-slate-800">{c.nombre}</td>
                       <td className="px-4 py-3 text-slate-600">{c.correo}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.unidad_negocio}</td>
                       <td className="px-4 py-3 text-slate-600">{c.tipo_soporte}</td>
+                      <td className="px-4 py-3 text-slate-600">{c.atendido_por ?? '—'}</td>
                       <td className="px-4 py-3">
                         <EstadoBadge estado={c.estado} />
                       </td>
