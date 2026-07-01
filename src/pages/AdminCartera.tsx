@@ -14,6 +14,16 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+const ADMINS_CARTERA = ['Magda Sichaca', 'Ricardo Zea', 'Yeimy Rocio Alba', 'Yeimy Prada']
+
+function getUltimoAtendidoPor(nombre: string, casoId: string): string | null {
+  return localStorage.getItem(`atendido_ultimo_${nombre}_${casoId}`)
+}
+
+function setUltimoAtendidoPor(nombre: string, casoId: string, valor: string) {
+  localStorage.setItem(`atendido_ultimo_${nombre}_${casoId}`, valor)
+}
+
 interface Stats {
   total: number
   pendiente: number
@@ -46,11 +56,45 @@ export default function AdminCartera() {
   const adminFileRef = useRef<HTMLInputElement>(null)
   const adminFormRef = useRef<HTMLFormElement>(null)
 
+  const [shareMounted, setShareMounted] = useState(false)
+  const [shareVisible, setShareVisible] = useState(false)
+  const [adminDestino, setAdminDestino] = useState('')
+  const [stepVisible, setStepVisible] = useState(true)
+  const [reasignando, setReasignando] = useState(false)
+  const [reasignError, setReasignError] = useState<string | null>(null)
+
+  function openShare() {
+    setAdminDestino('')
+    setReasignError(null)
+    setStepVisible(true)
+    setShareMounted(true)
+    requestAnimationFrame(() => requestAnimationFrame(() => setShareVisible(true)))
+  }
+
+  function elegirAdmin(a: string) {
+    setStepVisible(false)
+    setTimeout(() => {
+      setAdminDestino(a)
+      setStepVisible(true)
+    }, 180)
+  }
+
+  function closeShare() {
+    setShareVisible(false)
+    setTimeout(() => { setShareMounted(false); setAdminDestino(''); setReasignError(null) }, 300)
+  }
+
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
   const [filtroUnidad, setFiltroUnidad] = useState<string>('todos')
   const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
   const [animDir, setAnimDir] = useState<'right' | 'left'>('right')
+
+  const [assignBanner, setAssignBanner] = useState<string | null>(null)
+  const [reasignSuccess, setReasignSuccess] = useState<string | null>(null)
+  const [recienAsignados, setRecienAsignados] = useState<Set<string>>(new Set())
+  const casosRef = useRef<CasoCartera[]>([])
+  const adminNombreRef = useRef('')
 
   const channelRef = useRef<RealtimeChannel | null>(null)
   const listChannelRef = useRef<RealtimeChannel | null>(null)
@@ -62,6 +106,14 @@ export default function AdminCartera() {
       if (listChannelRef.current) supabase.removeChannel(listChannelRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!shareMounted) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') closeShare() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shareMounted])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -97,10 +149,59 @@ export default function AdminCartera() {
         proceso: all.filter((c) => c.estado === 'proceso').length,
         cerrado: all.filter((c) => c.estado === 'resuelto').length,
       })
+      checkReasignacionesAtrasadas(all)
     } finally {
       setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    casosRef.current = casos
+  }, [casos])
+
+  useEffect(() => {
+    adminNombreRef.current = adminNombre
+  }, [adminNombre])
+
+  function checkReasignacionesAtrasadas(lista: CasoCartera[]) {
+    const nombre = adminNombreRef.current
+    if (!nombre) return
+
+    const nuevos: string[] = []
+    const idsResaltar: string[] = []
+    for (const c of lista) {
+      const anterior = getUltimoAtendidoPor(nombre, c.id)
+      const actual = c.atendido_por ?? ''
+      if (anterior !== null && anterior !== actual && actual === nombre) {
+        nuevos.push(c.caso_numero)
+        idsResaltar.push(c.id)
+      }
+      setUltimoAtendidoPor(nombre, c.id, actual)
+    }
+
+    if (nuevos.length === 1) {
+      setAssignBanner(`el caso ${nuevos[0]}`)
+      setTimeout(() => setAssignBanner(null), 6000)
+    } else if (nuevos.length > 1) {
+      setAssignBanner(`${nuevos.length} casos nuevos`)
+      setTimeout(() => setAssignBanner(null), 6000)
+    }
+
+    if (idsResaltar.length > 0) {
+      setRecienAsignados((prev) => {
+        const next = new Set(prev)
+        idsResaltar.forEach((id) => next.add(id))
+        return next
+      })
+      setTimeout(() => {
+        setRecienAsignados((prev) => {
+          const next = new Set(prev)
+          idsResaltar.forEach((id) => next.delete(id))
+          return next
+        })
+      }, 8000)
+    }
+  }
 
   function suscribirALista() {
     if (listChannelRef.current) supabase.removeChannel(listChannelRef.current)
@@ -114,6 +215,39 @@ export default function AdminCartera() {
           playNotification()
           setCasos((prev) => [nuevo, ...prev])
           setStats((s) => ({ ...s, total: s.total + 1, pendiente: s.pendiente + 1 }))
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'casos_cartera' },
+        (payload) => {
+          const actualizado = payload.new as CasoCartera
+          const anterior = casosRef.current.find((c) => c.id === actualizado.id)
+          setCasos((prev) => prev.map((c) => (c.id === actualizado.id ? actualizado : c)))
+
+          const meLoAsignaron =
+            !!adminNombre &&
+            actualizado.atendido_por === adminNombre &&
+            !!anterior &&
+            anterior.atendido_por !== actualizado.atendido_por
+
+          if (adminNombre) {
+            setUltimoAtendidoPor(adminNombre, actualizado.id, actualizado.atendido_por ?? '')
+          }
+
+          if (meLoAsignaron) {
+            playNotification()
+            setAssignBanner(`el caso ${actualizado.caso_numero}`)
+            setTimeout(() => setAssignBanner(null), 6000)
+            setRecienAsignados((prev) => new Set(prev).add(actualizado.id))
+            setTimeout(() => {
+              setRecienAsignados((prev) => {
+                const next = new Set(prev)
+                next.delete(actualizado.id)
+                return next
+              })
+            }, 8000)
+          }
         },
       )
       .subscribe()
@@ -213,6 +347,31 @@ export default function AdminCartera() {
       suscribirACaso(caso)
     } finally {
       setLoadingMensajes(false)
+    }
+  }
+
+  async function reasignarCaso() {
+    if (!selectedCaso || !adminDestino) return
+    setReasignando(true)
+    setReasignError(null)
+    try {
+      const { data: updated, error } = await supabase
+        .from('casos_cartera')
+        .update({ atendido_por: adminDestino })
+        .eq('id', selectedCaso.id)
+        .select()
+        .single()
+      if (error) throw error
+      setSelectedCaso(updated)
+      setCasos((prev) => prev.map((c) => (c.id === selectedCaso.id ? updated : c)))
+      setReasignSuccess(`Caso reasignado con éxito a ${adminDestino}`)
+      setTimeout(() => setReasignSuccess(null), 4000)
+      closeShare()
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message ?? JSON.stringify(err)
+      setReasignError(`Error al reasignar el caso: ${msg}`)
+    } finally {
+      setReasignando(false)
     }
   }
 
@@ -344,11 +503,18 @@ export default function AdminCartera() {
         c.correo.toLowerCase().includes(q)
       )
     })
+    .sort((a, b) => Number(recienAsignados.has(b.id)) - Number(recienAsignados.has(a.id)))
   const totalPaginas = Math.ceil(casosFiltrados.length / ITEMS_PER_PAGE)
   const casosPaginados = casosFiltrados.slice((pagina - 1) * ITEMS_PER_PAGE, pagina * ITEMS_PER_PAGE)
 
   return (
     <div>
+      {reasignSuccess && (
+        <div className="fixed top-4 right-4 z-50 bg-green-600 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-lg animate-slide-in-right">
+          {reasignSuccess}
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-brand-800">Panel de Administración — Cartera</h1>
@@ -371,6 +537,18 @@ export default function AdminCartera() {
           </button>
         </div>
       </div>
+
+      {assignBanner && (
+        <div className="mb-6 bg-blue-600 text-white rounded-xl px-5 py-3 text-sm font-medium shadow-sm flex items-center justify-between animate-page-in">
+          <span>{adminNombre}, te han asignado <span className="font-bold">{assignBanner}</span></span>
+          <button
+            onClick={() => setAssignBanner(null)}
+            className="text-blue-100 hover:text-white ml-4 text-lg leading-none"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
@@ -414,12 +592,10 @@ export default function AdminCartera() {
               <span className="text-slate-500">Correo:</span>{' '}
               <span className="font-medium">{selectedCaso.correo}</span>
             </div>
-            {selectedCaso.tipo_usuario && (
-              <div>
-                <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
-                <span className="font-medium">{selectedCaso.tipo_usuario}</span>
-              </div>
-            )}
+            <div>
+              <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
+              <span className="font-medium">{selectedCaso.tipo_usuario || 'Sin especificar'}</span>
+            </div>
             {selectedCaso.numero_id && (
               <div>
                 <span className="text-slate-500">N° de Inscripción:</span>{' '}
@@ -457,6 +633,68 @@ export default function AdminCartera() {
               </div>
             )}
           </div>
+
+          {shareMounted && (
+            <div
+              className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${shareVisible ? 'bg-black/50' : 'bg-black/0'}`}
+              onClick={closeShare}
+            >
+              <div
+                className={`bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm transition-all duration-300 ease-out ${shareVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={`transition-all duration-150 ease-out ${stepVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'}`}>
+                  {!adminDestino ? (
+                    <>
+                      <h3 className="text-base font-semibold text-slate-800 mb-4">
+                        Selecciona un administrador
+                      </h3>
+                      <div className="flex flex-col gap-2">
+                        {ADMINS_CARTERA.map((a) => (
+                          <button
+                            key={a}
+                            onClick={() => elegirAdmin(a)}
+                            className="w-full text-left px-4 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-brand-300 text-sm font-medium text-slate-700 transition-colors duration-150"
+                          >
+                            {a}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={closeShare}
+                        className="w-full mt-4 text-slate-500 hover:text-slate-700 text-sm transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-sm text-slate-700 mb-6">
+                        ¿Está seguro que le quiere reasignar este caso a{' '}
+                        <span className="font-semibold">{adminDestino}</span>?
+                      </p>
+                      {reasignError && <p className="text-red-600 text-xs mb-4">{reasignError}</p>}
+                      <div className="flex gap-3 justify-center">
+                        <button
+                          onClick={reasignarCaso}
+                          disabled={reasignando}
+                          className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-sm font-semibold px-5 py-2 rounded-lg active:scale-95 transition-all duration-150"
+                        >
+                          {reasignando ? 'Reasignando...' : 'Reasignar'}
+                        </button>
+                        <button
+                          onClick={closeShare}
+                          className="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-2 rounded-lg active:scale-95 transition-all duration-150"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="px-6 py-5">
             <h3 className="text-sm font-semibold text-slate-700 mb-4">Historial de mensajes</h3>
@@ -545,21 +783,30 @@ export default function AdminCartera() {
               </div>
 
               {sendError && <p className="text-red-600 text-xs">{sendError}</p>}
-              <button
-                type="submit"
-                disabled={sending}
-                className={`self-end px-5 py-2 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 ${
-                  nuevoEstado === 'resuelto'
-                    ? 'bg-green-600 hover:bg-green-700'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-              >
-                {sending
-                  ? 'Enviando...'
-                  : nuevoEstado === 'resuelto'
-                  ? 'Responder y Resolver Caso'
-                  : 'Responder'}
-              </button>
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={openShare}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm hover:shadow-md active:scale-95 transition-all duration-200"
+                >
+                  Reasignar Caso
+                </button>
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className={`px-5 py-2 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 ${
+                    nuevoEstado === 'resuelto'
+                      ? 'bg-green-600 hover:bg-green-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {sending
+                    ? 'Enviando...'
+                    : nuevoEstado === 'resuelto'
+                    ? 'Responder y Resolver Caso'
+                    : 'Responder'}
+                </button>
+              </div>
             </form>
           )}
         </div>
@@ -661,7 +908,9 @@ export default function AdminCartera() {
                     <tr
                       key={c.id}
                       onClick={() => abrirCaso(c)}
-                      className="hover:bg-brand-50 cursor-pointer transition-colors"
+                      className={`cursor-pointer transition-colors duration-500 ${
+                        recienAsignados.has(c.id) ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-brand-50'
+                      }`}
                     >
                       <td className="px-4 py-3 font-semibold text-brand-700">{c.caso_numero}</td>
                       <td className="px-4 py-3 text-slate-800">{c.nombre}</td>
