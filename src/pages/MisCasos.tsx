@@ -270,12 +270,10 @@ export default function MisCasos() {
               <span className="text-slate-500">Tipo de Soporte:</span>{' '}
               <span className="font-medium">{selectedCaso.tipo_soporte}</span>
             </div>
-            {selectedCaso.tipo_soporte === 'Inscripciones' && (
-              <div>
-                <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
-                <span className="font-medium">{selectedCaso.tipo_usuario}</span>
-              </div>
-            )}
+            <div>
+              <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
+              <span className="font-medium">{selectedCaso.tipo_usuario || 'Sin especificar'}</span>
+            </div>
             {!SIN_ID.includes(selectedCaso.tipo_soporte) && selectedCaso.numero_id && (
               <div>
                 <span className="text-slate-500">

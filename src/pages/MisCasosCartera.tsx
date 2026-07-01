@@ -259,6 +259,10 @@ export default function MisCasosCartera() {
               <span className="text-slate-500">Tipo de Soporte:</span>{' '}
               <span className="font-medium">{selectedCaso.tipo_soporte}</span>
             </div>
+            <div>
+              <span className="text-slate-500">Tipo de Inscripción:</span>{' '}
+              <span className="font-medium">{selectedCaso.tipo_usuario || 'Sin especificar'}</span>
+            </div>
             <div className="sm:col-span-2">
               <span className="text-slate-500">Descripción:</span>{' '}
               <span className="font-medium">{selectedCaso.descripcion}</span>

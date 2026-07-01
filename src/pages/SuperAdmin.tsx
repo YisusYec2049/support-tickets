@@ -335,9 +335,7 @@ export default function SuperAdmin() {
           <div className="px-6 py-4 border-b border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div><span className="text-slate-500">Nombre:</span> <span className="font-medium">{selectedCaso.nombre}</span></div>
             <div><span className="text-slate-500">Tipo de Soporte:</span> <span className="font-medium">{selectedCaso.tipo_soporte}</span></div>
-            {selectedCaso.tipo_soporte === 'Inscripciones' && selectedCaso.tipo_usuario && (
-              <div><span className="text-slate-500">Tipo de Inscripción:</span> <span className="font-medium">{selectedCaso.tipo_usuario}</span></div>
-            )}
+            <div><span className="text-slate-500">Tipo de Inscripción:</span> <span className="font-medium">{selectedCaso.tipo_usuario || 'Sin especificar'}</span></div>
             {selectedCaso.numero_id && !SIN_ID.includes(selectedCaso.tipo_soporte) && (
               <div><span className="text-slate-500">{ID_LABEL[selectedCaso.tipo_soporte] ?? 'ID'}:</span> <span className="font-medium">{selectedCaso.numero_id}</span></div>
             )}
