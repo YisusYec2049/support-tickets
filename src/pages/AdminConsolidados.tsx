@@ -13,9 +13,7 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
 }
 
-function tiempoResolucion(caso: CasoSoporte): string {
-  if (caso.estado !== 'resuelto') return '—'
-  const ms = new Date(caso.updated_at).getTime() - new Date(caso.created_at).getTime()
+function formatDuration(ms: number): string {
   const totalMinutes = Math.floor(ms / 60000)
   const days = Math.floor(totalMinutes / 1440)
   const hours = Math.floor((totalMinutes % 1440) / 60)
@@ -23,6 +21,12 @@ function tiempoResolucion(caso: CasoSoporte): string {
   if (days > 0) return `${days}d ${hours}h`
   if (hours > 0) return `${hours}h ${minutes}m`
   return `${minutes}m`
+}
+
+function tiempoResolucion(caso: CasoSoporte): string {
+  if (caso.estado !== 'resuelto') return '—'
+  const ms = new Date(caso.updated_at).getTime() - new Date(caso.created_at).getTime()
+  return formatDuration(ms)
 }
 
 function filas(casos: CasoSoporte[]) {
@@ -161,9 +165,39 @@ export default function AdminConsolidados() {
     resuelto: casos.filter((c) => c.estado === 'resuelto').length,
   }
   const porTipo: Record<string, number> = casos.reduce(
-    (acc, c) => ({ ...acc, [c.tipo_usuario]: (acc[c.tipo_usuario] ?? 0) + 1 }),
+    (acc, c) => {
+      const key = c.tipo_usuario || 'Sin especificar'
+      return { ...acc, [key]: (acc[key] ?? 0) + 1 }
+    },
     {} as Record<string, number>,
   )
+  const porTipoOrdenado = Object.entries(porTipo).sort((a, b) => b[1] - a[1])
+
+  const porTipoSoporte: Record<string, number> = casos.reduce(
+    (acc, c) => ({ ...acc, [c.tipo_soporte]: (acc[c.tipo_soporte] ?? 0) + 1 }),
+    {} as Record<string, number>,
+  )
+  const topTipoSoporte = Object.entries(porTipoSoporte).sort((a, b) => b[1] - a[1])[0]
+
+  const porUsuario: Record<string, { nombre: string; count: number }> = casos.reduce(
+    (acc, c) => {
+      const actual = acc[c.correo] ?? { nombre: c.nombre, count: 0 }
+      return { ...acc, [c.correo]: { nombre: actual.nombre, count: actual.count + 1 } }
+    },
+    {} as Record<string, { nombre: string; count: number }>,
+  )
+  const topUsuario = Object.entries(porUsuario).sort((a, b) => b[1].count - a[1].count)[0]
+
+  const efectividad = total > 0 ? (porEstado.resuelto / total) * 100 : 0
+  const casosResueltos = casos.filter((c) => c.estado === 'resuelto')
+  const tiempoPromedioResolucion = casosResueltos.length > 0
+    ? formatDuration(
+        casosResueltos.reduce(
+          (sum, c) => sum + (new Date(c.updated_at).getTime() - new Date(c.created_at).getTime()),
+          0,
+        ) / casosResueltos.length,
+      )
+    : '—'
 
   // ─── Login ───────────────────────────────────────────────────────────────
   if (!authenticated) {
@@ -308,12 +342,39 @@ export default function AdminConsolidados() {
             </div>
           </div>
 
+          {/* Eficiencia del soporte */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">Eficiencia del soporte</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <div className="text-2xl font-bold text-brand-700">{efectividad.toFixed(1)}%</div>
+                <div className="text-sm text-slate-600 mt-1">Efectividad (resueltos / total)</div>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <div className="text-2xl font-bold text-brand-700">{tiempoPromedioResolucion}</div>
+                <div className="text-sm text-slate-600 mt-1">Tiempo promedio de resolución</div>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <div className="text-2xl font-bold text-brand-700">{topTipoSoporte ? topTipoSoporte[1] : '—'}</div>
+                <div className="text-sm text-slate-600 mt-1">
+                  Tipo de soporte más frecuente{topTipoSoporte ? `: ${topTipoSoporte[0]}` : ''}
+                </div>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <div className="text-2xl font-bold text-brand-700">{topUsuario ? topUsuario[1].count : '—'}</div>
+                <div className="text-sm text-slate-600 mt-1">
+                  Usuario con más casos{topUsuario ? `: ${topUsuario[1].nombre}` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Por tipo */}
-          {Object.keys(porTipo).length > 0 && (
+          {porTipoOrdenado.length > 0 && (
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
               <h3 className="text-sm font-semibold text-slate-700 mb-3">Por tipo de inscripción</h3>
               <div className="flex flex-wrap gap-3">
-                {Object.entries(porTipo).map(([tipo, count]) => (
+                {porTipoOrdenado.map(([tipo, count]) => (
                   <div key={tipo} className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm">
                     <span className="font-semibold text-brand-700">{count}</span>
                     <span className="text-slate-600 ml-2">{tipo}</span>
