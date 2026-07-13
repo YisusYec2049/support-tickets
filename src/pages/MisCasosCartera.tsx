@@ -8,6 +8,7 @@ import { getUserEmail, clearUserEmail } from '../lib/userSession'
 import type { CasoCartera, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
+import { IconClose, IconChevronLeft, IconInbox, IconUpload } from '../components/icons'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium' })
@@ -214,19 +215,19 @@ export default function MisCasosCartera() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-brand-800">Mis Casos — Cartera</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Mis Casos — Cartera</h1>
           <p className="text-slate-500 mt-1 text-sm">{correo}</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => navigate('/cartera/nuevo-caso')}
-            className="text-sm text-white bg-brand-700 hover:bg-brand-800 px-3 py-1.5 rounded-lg transition-colors font-medium"
+            className="text-sm text-white bg-brand-700 hover:bg-brand-800 hover:brightness-105 px-3.5 py-1.5 rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring font-medium"
           >
             Crear Nuevo Caso
           </button>
           <button
             onClick={cerrarSesion}
-            className="text-sm text-slate-500 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
+            className="text-sm text-slate-500 hover:text-slate-700 border border-black/10 px-3.5 py-1.5 rounded-full active:scale-[0.97] transition-all duration-200 ease-spring"
           >
             Cambiar correo
           </button>
@@ -241,7 +242,7 @@ export default function MisCasosCartera() {
 
       {/* Case detail */}
       {selectedCaso && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
+        <div className="bg-white border border-black/5 rounded-2xl shadow-sm mb-6 overflow-hidden">
           <div className="bg-brand-800 px-6 py-4 flex items-center justify-between">
             <div>
               <span className="text-white font-bold text-lg">{selectedCaso.caso_numero}</span>
@@ -249,8 +250,8 @@ export default function MisCasosCartera() {
                 <EstadoBadge estado={selectedCaso.estado} />
               </span>
             </div>
-            <button onClick={volverALista} className="text-blue-200 hover:text-white text-sm">
-              ← Volver
+            <button onClick={volverALista} className="text-blue-200 hover:text-white text-sm flex items-center gap-1">
+              <IconChevronLeft className="w-3.5 h-3.5" /> Volver
             </button>
           </div>
 
@@ -309,19 +310,27 @@ export default function MisCasosCartera() {
                 className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
               />
               <div>
+                <label
+                  htmlFor="adjunto-reply-user-cartera"
+                  className="flex items-center gap-2 w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm text-slate-600 hover:border-brand-400 hover:bg-brand-50/50 transition-colors cursor-pointer"
+                >
+                  <IconUpload className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">{replyFile ? replyFile.name : 'Adjuntar imagen...'}</span>
+                </label>
                 <input
+                  id="adjunto-reply-user-cartera"
                   ref={replyFileRef}
                   type="file"
                   accept="image/*"
                   onChange={(e) => setReplyFile(e.target.files?.[0] ?? null)}
-                  className="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+                  className="hidden"
                 />
                 {replyFile && (
                   <div className="relative inline-block mt-3">
                     <img
                       src={URL.createObjectURL(replyFile)}
                       alt="Vista previa"
-                      className="max-h-48 rounded-lg border border-slate-200 object-contain"
+                      className="max-h-48 rounded-lg border border-black/5 object-contain"
                     />
                     <button
                       type="button"
@@ -329,7 +338,7 @@ export default function MisCasosCartera() {
                       className="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow transition-colors"
                       title="Quitar imagen"
                     >
-                      ✕
+                      <IconClose className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 )}
@@ -338,7 +347,7 @@ export default function MisCasosCartera() {
               <button
                 type="submit"
                 disabled={sendingReply}
-                className="self-end px-5 py-2 bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 text-white text-sm font-semibold rounded-lg transition-colors"
+                className="self-end px-5 py-2 bg-brand-700 hover:bg-brand-800 hover:brightness-105 disabled:bg-brand-300 text-white text-sm font-semibold rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring"
               >
                 {sendingReply ? 'Enviando...' : 'Enviar mensaje'}
               </button>
@@ -362,7 +371,7 @@ export default function MisCasosCartera() {
             <p className="text-slate-400 text-sm text-center py-16">Cargando casos...</p>
           ) : searched && casos.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
-              <p className="text-4xl mb-3">📭</p>
+              <IconInbox className="w-10 h-10 mx-auto mb-3 text-slate-300" />
               <p className="font-medium text-slate-600">No tienes casos registrados aún.</p>
               <p className="text-sm mt-1">Usa el botón "Crear Nuevo Caso" para radicar tu primera solicitud.</p>
             </div>
@@ -382,7 +391,7 @@ export default function MisCasosCartera() {
                     className={`relative w-full text-left rounded-xl border transition-all group overflow-hidden ${
                       unread > 0
                         ? 'border-blue-300'
-                        : 'bg-white border-slate-200 hover:border-brand-400 hover:shadow-sm'
+                        : 'bg-white border-black/5 hover:border-brand-400 hover:shadow-sm'
                     }`}
                   >
                     {unread > 0 && (

@@ -38,7 +38,7 @@ export default function MensajeThread({ mensajes, perspectiva = 'usuario', resol
               className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
                 esMio
                   ? 'bg-brand-700 text-white rounded-tr-sm'
-                  : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm'
+                  : 'bg-white border border-black/5 text-slate-800 rounded-tl-sm'
               }`}
             >
               {m.mensaje}

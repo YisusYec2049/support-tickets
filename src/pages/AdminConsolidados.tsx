@@ -5,6 +5,8 @@ import { isAdminAuthenticated, setAdminAuthenticated, clearAdminAuth } from '../
 import PasswordInput from '../components/PasswordInput'
 import { useNavigate } from 'react-router-dom'
 import EstadoBadge from '../components/EstadoBadge'
+import { IconChevronLeft, IconShieldCheck } from '../components/icons'
+import Select from '../components/Select'
 import type { CasoSoporte } from '../types'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD as string
@@ -202,10 +204,15 @@ export default function AdminConsolidados() {
   // ─── Login ───────────────────────────────────────────────────────────────
   if (!authenticated) {
     return (
-      <div className="max-w-sm mx-auto py-20">
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
-          <h2 className="text-xl font-bold text-brand-800 mb-1 text-center">Acceso Administrativo</h2>
-          <p className="text-slate-500 text-sm text-center mb-6">Área restringida — Dirección Financiera</p>
+      <div className="max-w-sm mx-auto py-20 animate-pop-in">
+        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-[0_1px_1px_rgba(0,0,0,0.03),0_16px_40px_-16px_rgba(0,0,0,0.18)] p-8">
+          <div className="mb-6 flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 shadow-inner shadow-white/20 ring-1 ring-black/5 flex items-center justify-center mb-4">
+              <IconShieldCheck className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-lg font-semibold text-slate-900">Acceso Administrativo</h2>
+            <p className="text-slate-500 text-sm mt-1">Área restringida — Dirección Financiera</p>
+          </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <PasswordInput
               value={password}
@@ -216,7 +223,7 @@ export default function AdminConsolidados() {
             {authError && <p className="text-red-600 text-xs">Contraseña incorrecta.</p>}
             <button
               type="submit"
-              className="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
+              className="w-full bg-brand-700 hover:bg-brand-800 hover:brightness-105 text-white font-semibold py-2.5 rounded-full shadow-sm transition-all duration-200 ease-spring active:scale-[0.97] text-sm"
             >
               Ingresar
             </button>
@@ -231,19 +238,19 @@ export default function AdminConsolidados() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-brand-800">Consolidados</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Consolidados</h1>
           <p className="text-slate-500 text-sm mt-1">Reporte de tickets por rango de fechas</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => navigate('/admin/financiero')}
-            className="text-sm text-brand-700 border border-brand-300 px-3 py-1.5 rounded-lg hover:bg-brand-50 transition-colors"
+            className="text-sm text-brand-700 border border-brand-300 px-3.5 py-1.5 rounded-full hover:bg-brand-50 active:scale-[0.97] transition-all duration-200 ease-spring flex items-center gap-1"
           >
-            ← Panel de casos
+            <IconChevronLeft className="w-3.5 h-3.5" /> Panel de casos
           </button>
           <button
             onClick={() => { clearAdminAuth(); navigate('/admin') }}
-            className="text-sm text-slate-500 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
+            className="text-sm text-slate-500 hover:text-slate-700 border border-black/10 px-3.5 py-1.5 rounded-full active:scale-[0.97] transition-all duration-200 ease-spring"
           >
             Cerrar sesión
           </button>
@@ -253,7 +260,7 @@ export default function AdminConsolidados() {
       {/* Filtros */}
       <form
         onSubmit={generar}
-        className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8"
+        className="bg-white rounded-2xl border border-black/[0.06] shadow-[0_1px_1px_rgba(0,0,0,0.03),0_16px_40px_-16px_rgba(0,0,0,0.18)] p-6 mb-8"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
@@ -265,7 +272,7 @@ export default function AdminConsolidados() {
               value={desde}
               onChange={(e) => setDesde(e.target.value)}
               required
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-black/10 bg-slate-50/60 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-400 transition-colors"
             />
           </div>
           <div>
@@ -277,43 +284,30 @@ export default function AdminConsolidados() {
               value={hasta}
               onChange={(e) => setHasta(e.target.value)}
               required
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-black/10 bg-slate-50/60 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-400 transition-colors"
             />
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
               Estado
             </label>
-            <select
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-            >
-              {ESTADOS.map((e) => (
-                <option key={e.value} value={e.value}>{e.label}</option>
-              ))}
-            </select>
+            <Select value={filtroEstado} onChange={setFiltroEstado} options={ESTADOS} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
               Tipo de Soporte
             </label>
-            <select
+            <Select
               value={filtroTipoSoporte}
-              onChange={(e) => setFiltroTipoSoporte(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-            >
-              <option value="todos">Todos</option>
-              {TIPOS_SOPORTE.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+              onChange={setFiltroTipoSoporte}
+              options={[{ value: 'todos', label: 'Todos' }, ...TIPOS_SOPORTE.map((t) => ({ value: t, label: t }))]}
+            />
           </div>
         </div>
         <button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto px-6 py-2.5 bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300 text-white text-sm font-semibold rounded-lg active:scale-95 transition-all"
+          className="w-full sm:w-auto px-6 py-2.5 bg-brand-700 hover:bg-brand-800 hover:brightness-105 disabled:bg-brand-300 text-white text-sm font-semibold rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring"
         >
           {loading ? 'Generando...' : 'Generar reporte'}
         </button>
@@ -324,43 +318,43 @@ export default function AdminConsolidados() {
         <>
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <div className="bg-brand-700 text-white rounded-xl p-5 shadow-sm">
+            <div className="bg-gradient-to-br from-blue-600 to-brand-800 text-white rounded-2xl p-5 shadow-sm">
               <div className="text-3xl font-bold">{total}</div>
               <div className="text-sm font-medium opacity-90 mt-1">Total</div>
             </div>
-            <div className="bg-yellow-500 text-white rounded-xl p-5 shadow-sm">
+            <div className="bg-gradient-to-br from-amber-400 to-yellow-600 text-white rounded-2xl p-5 shadow-sm">
               <div className="text-3xl font-bold">{porEstado.pendiente}</div>
               <div className="text-sm font-medium opacity-90 mt-1">Pendientes</div>
             </div>
-            <div className="bg-blue-500 text-white rounded-xl p-5 shadow-sm">
+            <div className="bg-gradient-to-br from-sky-400 to-blue-600 text-white rounded-2xl p-5 shadow-sm">
               <div className="text-3xl font-bold">{porEstado.proceso}</div>
               <div className="text-sm font-medium opacity-90 mt-1">En Proceso</div>
             </div>
-            <div className="bg-green-500 text-white rounded-xl p-5 shadow-sm">
+            <div className="bg-gradient-to-br from-emerald-400 to-green-600 text-white rounded-2xl p-5 shadow-sm">
               <div className="text-3xl font-bold">{porEstado.resuelto}</div>
               <div className="text-sm font-medium opacity-90 mt-1">Resueltos</div>
             </div>
           </div>
 
           {/* Eficiencia del soporte */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
+          <div className="bg-white rounded-2xl border border-black/[0.06] shadow-[0_1px_1px_rgba(0,0,0,0.03),0_16px_40px_-16px_rgba(0,0,0,0.18)] p-5 mb-6">
             <h3 className="text-sm font-semibold text-slate-700 mb-3">Eficiencia del soporte</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-slate-50 to-white border border-black/[0.06] rounded-xl p-4 transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-sm">
                 <div className="text-2xl font-bold text-brand-700">{efectividad.toFixed(1)}%</div>
                 <div className="text-sm text-slate-600 mt-1">Efectividad (resueltos / total)</div>
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-slate-50 to-white border border-black/[0.06] rounded-xl p-4 transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-sm">
                 <div className="text-2xl font-bold text-brand-700">{tiempoPromedioResolucion}</div>
                 <div className="text-sm text-slate-600 mt-1">Tiempo promedio de resolución</div>
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-slate-50 to-white border border-black/[0.06] rounded-xl p-4 transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-sm">
                 <div className="text-2xl font-bold text-brand-700">{topTipoSoporte ? topTipoSoporte[1] : '—'}</div>
                 <div className="text-sm text-slate-600 mt-1">
                   Tipo de soporte más frecuente{topTipoSoporte ? `: ${topTipoSoporte[0]}` : ''}
                 </div>
               </div>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-slate-50 to-white border border-black/[0.06] rounded-xl p-4 transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-sm">
                 <div className="text-2xl font-bold text-brand-700">{topUsuario ? topUsuario[1].count : '—'}</div>
                 <div className="text-sm text-slate-600 mt-1">
                   Usuario con más casos{topUsuario ? `: ${topUsuario[1].nombre}` : ''}
@@ -371,13 +365,13 @@ export default function AdminConsolidados() {
 
           {/* Por tipo */}
           {porTipoOrdenado.length > 0 && (
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
+            <div className="bg-white rounded-2xl border border-black/[0.06] shadow-[0_1px_1px_rgba(0,0,0,0.03),0_16px_40px_-16px_rgba(0,0,0,0.18)] p-5 mb-6">
               <h3 className="text-sm font-semibold text-slate-700 mb-3">Por tipo de inscripción</h3>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5">
                 {porTipoOrdenado.map(([tipo, count]) => (
-                  <div key={tipo} className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm">
+                  <div key={tipo} className="flex items-center gap-2 bg-brand-50/80 border border-brand-200/60 rounded-full px-4 py-1.5 text-sm">
                     <span className="font-semibold text-brand-700">{count}</span>
-                    <span className="text-slate-600 ml-2">{tipo}</span>
+                    <span className="text-slate-600">{tipo}</span>
                   </div>
                 ))}
               </div>
@@ -385,8 +379,8 @@ export default function AdminConsolidados() {
           )}
 
           {/* Tabla */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+          <div className="bg-white rounded-2xl border border-black/[0.06] shadow-[0_1px_1px_rgba(0,0,0,0.03),0_16px_40px_-16px_rgba(0,0,0,0.18)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-black/[0.06] flex items-center justify-between flex-wrap gap-3">
               <span className="text-sm font-semibold text-slate-700">
                 {total} caso{total !== 1 ? 's' : ''} · {formatDate(desde + 'T12:00:00')} — {formatDate(hasta + 'T12:00:00')}
                 {filtroEstado !== 'todos' && (
@@ -400,7 +394,7 @@ export default function AdminConsolidados() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => exportCSV(casos, desde, hasta, filtroEstado, filtroTipoSoporte)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg active:scale-95 transition-all"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-600 hover:bg-slate-700 hover:brightness-105 text-white text-xs font-semibold rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
@@ -409,7 +403,7 @@ export default function AdminConsolidados() {
                   </button>
                   <button
                     onClick={() => exportExcel(casos, desde, hasta, filtroEstado, filtroTipoSoporte)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg active:scale-95 transition-all"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-green-600 hover:bg-green-700 hover:brightness-105 text-white text-xs font-semibold rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
@@ -427,7 +421,7 @@ export default function AdminConsolidados() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200">
+                  <thead className="bg-slate-50/60 border-b border-black/[0.06]">
                     <tr>
                       {['N° Caso', 'Nombre', 'Correo', 'Tipo', 'N° Inscripción', 'Tipo de Soporte', 'Estado', 'Fecha', 'Tiempo Resolución'].map((h) => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wide whitespace-nowrap">
@@ -438,7 +432,7 @@ export default function AdminConsolidados() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {casos.map((c) => (
-                      <tr key={c.id} className="hover:bg-slate-50 transition-colors">
+                      <tr key={c.id} className="hover:bg-brand-50 transition-colors">
                         <td className="px-4 py-3 font-semibold text-brand-700 whitespace-nowrap">{c.caso_numero}</td>
                         <td className="px-4 py-3 text-slate-800">{c.nombre}</td>
                         <td className="px-4 py-3 text-slate-600">{c.correo}</td>

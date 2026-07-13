@@ -9,6 +9,7 @@ import PasswordInput from '../components/PasswordInput'
 import type { CasoCartera, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
+import { IconClose, IconChevronLeft, IconChevronRight, IconUpload, IconShieldCheck } from '../components/icons'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
@@ -451,14 +452,19 @@ export default function AdminCartera() {
 
   if (!authenticated) {
     return (
-      <div className="max-w-sm mx-auto py-20">
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
-          <h2 className="text-xl font-bold text-brand-800 mb-1 text-center">
-            Acceso Administrativo
-          </h2>
-          <p className="text-slate-500 text-sm text-center mb-6">
-            Área restringida — Cartera
-          </p>
+      <div className="max-w-sm mx-auto py-20 animate-pop-in">
+        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-[0_1px_1px_rgba(0,0,0,0.03),0_16px_40px_-16px_rgba(0,0,0,0.18)] p-8">
+          <div className="mb-6 flex flex-col items-center text-center">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 shadow-inner shadow-white/20 ring-1 ring-black/5 flex items-center justify-center mb-4">
+              <IconShieldCheck className="w-6 h-6 text-white" />
+            </div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Acceso Administrativo
+            </h2>
+            <p className="text-slate-500 text-sm mt-1">
+              Área restringida — Cartera
+            </p>
+          </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="text"
@@ -467,7 +473,7 @@ export default function AdminCartera() {
               required
               autoFocus
               placeholder="Nombre"
-              className="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full border border-black/10 bg-slate-50/60 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-400 transition-colors"
             />
             <PasswordInput
               value={password}
@@ -480,7 +486,7 @@ export default function AdminCartera() {
             <button
               type="submit"
               disabled={loginLoading}
-              className="w-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm disabled:opacity-50"
+              className="w-full bg-brand-700 hover:bg-brand-800 hover:brightness-105 text-white font-semibold py-2.5 rounded-full shadow-sm transition-all duration-200 ease-spring active:scale-[0.97] text-sm disabled:opacity-50"
             >
               {loginLoading ? 'Verificando...' : 'Ingresar'}
             </button>
@@ -517,7 +523,7 @@ export default function AdminCartera() {
 
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-brand-800">Panel de Administración — Cartera</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Panel de Administración — Cartera</h1>
           <p className="text-slate-500 text-sm mt-1">
             Gestión de casos — Cartera{adminNombre ? ` · ${adminNombre}` : ''}
           </p>
@@ -525,13 +531,13 @@ export default function AdminCartera() {
         <div className="flex gap-2">
           <button
             onClick={() => navigate('/admin/cartera/consolidados')}
-            className="text-sm text-white bg-brand-700 hover:bg-brand-800 px-3 py-1.5 rounded-lg transition-colors font-medium"
+            className="text-sm text-white bg-brand-700 hover:bg-brand-800 hover:brightness-105 px-3.5 py-1.5 rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring font-medium"
           >
             Consolidados
           </button>
           <button
             onClick={async () => { await supabase.auth.signOut(); navigate('/admin') }}
-            className="text-sm text-slate-500 hover:text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
+            className="text-sm text-slate-500 hover:text-slate-700 border border-black/10 px-3.5 py-1.5 rounded-full active:scale-[0.97] transition-all duration-200 ease-spring"
           >
             Cerrar sesión
           </button>
@@ -543,9 +549,9 @@ export default function AdminCartera() {
           <span>{adminNombre}, te han asignado <span className="font-bold">{assignBanner}</span></span>
           <button
             onClick={() => setAssignBanner(null)}
-            className="text-blue-100 hover:text-white ml-4 text-lg leading-none"
+            className="text-blue-100 hover:text-white ml-4 leading-none"
           >
-            ✕
+            <IconClose className="w-4 h-4" />
           </button>
         </div>
       )}
@@ -553,12 +559,12 @@ export default function AdminCartera() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Total', value: stats.total, color: 'bg-brand-700 text-white' },
-          { label: 'Pendientes', value: stats.pendiente, color: 'bg-yellow-500 text-white' },
-          { label: 'En Proceso', value: stats.proceso, color: 'bg-blue-500 text-white' },
-          { label: 'Cerrados', value: stats.cerrado, color: 'bg-green-500 text-white' },
+          { label: 'Total', value: stats.total, color: 'bg-gradient-to-br from-blue-600 to-brand-800 text-white' },
+          { label: 'Pendientes', value: stats.pendiente, color: 'bg-gradient-to-br from-amber-400 to-yellow-600 text-white' },
+          { label: 'En Proceso', value: stats.proceso, color: 'bg-gradient-to-br from-sky-400 to-blue-600 text-white' },
+          { label: 'Cerrados', value: stats.cerrado, color: 'bg-gradient-to-br from-emerald-400 to-green-600 text-white' },
         ].map((s) => (
-          <div key={s.label} className={`rounded-xl p-5 shadow-sm ${s.color}`}>
+          <div key={s.label} className={`rounded-2xl p-5 shadow-sm ${s.color}`}>
             <div className="text-3xl font-bold">{s.value}</div>
             <div className="text-sm font-medium opacity-90 mt-1">{s.label}</div>
           </div>
@@ -567,7 +573,7 @@ export default function AdminCartera() {
 
       {/* Case detail panel */}
       {selectedCaso && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm mb-6 overflow-hidden">
+        <div className="bg-white border border-black/5 rounded-2xl shadow-sm mb-6 overflow-hidden">
           <div className="bg-brand-800 px-6 py-4 flex items-center justify-between">
             <div>
               <span className="text-white font-bold text-lg">{selectedCaso.caso_numero}</span>
@@ -577,9 +583,9 @@ export default function AdminCartera() {
             </div>
             <button
               onClick={() => { cancelarSuscripcion(); setSelectedCaso(null) }}
-              className="text-blue-200 hover:text-white text-sm"
+              className="text-blue-200 hover:text-white text-sm flex items-center gap-1"
             >
-              ← Volver a la lista
+              <IconChevronLeft className="w-3.5 h-3.5" /> Volver a la lista
             </button>
           </div>
 
@@ -629,21 +635,21 @@ export default function AdminCartera() {
             {selectedCaso.adjunto_url && (
               <div className="sm:col-span-2">
                 <span className="text-slate-500 block mb-2">Adjunto:</span>
-                <FileAttachment url={selectedCaso.adjunto_url} imageClassName="max-h-64 rounded-lg border border-slate-200 object-contain hover:opacity-90 transition-opacity" />
+                <FileAttachment url={selectedCaso.adjunto_url} imageClassName="max-h-64 rounded-lg border border-black/5 object-contain hover:opacity-90 transition-opacity" />
               </div>
             )}
           </div>
 
           {shareMounted && (
             <div
-              className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ${shareVisible ? 'bg-black/50' : 'bg-black/0'}`}
+              className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ease-spring ${shareVisible ? 'bg-black/50' : 'bg-black/0'}`}
               onClick={closeShare}
             >
               <div
-                className={`bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm transition-all duration-300 ease-out ${shareVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+                className={`bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm transition-all duration-300 ease-spring ${shareVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className={`transition-all duration-150 ease-out ${stepVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'}`}>
+                <div className={`transition-all duration-150 ease-spring ${stepVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'}`}>
                   {!adminDestino ? (
                     <>
                       <h3 className="text-base font-semibold text-slate-800 mb-4">
@@ -654,7 +660,7 @@ export default function AdminCartera() {
                           <button
                             key={a}
                             onClick={() => elegirAdmin(a)}
-                            className="w-full text-left px-4 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-brand-300 text-sm font-medium text-slate-700 transition-colors duration-150"
+                            className="w-full text-left px-4 py-2.5 rounded-lg border border-black/5 hover:bg-slate-50 hover:border-brand-300 text-sm font-medium text-slate-700 transition-colors duration-150"
                           >
                             {a}
                           </button>
@@ -678,13 +684,13 @@ export default function AdminCartera() {
                         <button
                           onClick={reasignarCaso}
                           disabled={reasignando}
-                          className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white text-sm font-semibold px-5 py-2 rounded-lg active:scale-95 transition-all duration-150"
+                          className="bg-green-600 hover:bg-green-700 hover:brightness-105 disabled:bg-green-300 text-white text-sm font-semibold px-5 py-2 rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring"
                         >
                           {reasignando ? 'Reasignando...' : 'Reasignar'}
                         </button>
                         <button
                           onClick={closeShare}
-                          className="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-2 rounded-lg active:scale-95 transition-all duration-150"
+                          className="bg-red-600 hover:bg-red-700 hover:brightness-105 text-white text-sm font-semibold px-5 py-2 rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring"
                         >
                           Cancelar
                         </button>
@@ -728,19 +734,27 @@ export default function AdminCartera() {
               />
 
               <div>
+                <label
+                  htmlFor="adjunto-reply-admin-cartera"
+                  className="flex items-center gap-2 w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm text-slate-600 hover:border-brand-400 hover:bg-brand-50/50 transition-colors cursor-pointer"
+                >
+                  <IconUpload className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">{adminFile ? adminFile.name : 'Adjuntar imagen...'}</span>
+                </label>
                 <input
+                  id="adjunto-reply-admin-cartera"
                   ref={adminFileRef}
                   type="file"
                   accept="image/*"
                   onChange={(e) => setAdminFile(e.target.files?.[0] ?? null)}
-                  className="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm text-slate-600 file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+                  className="hidden"
                 />
                 {adminFile && (
                   <div className="relative inline-block mt-3">
                     <img
                       src={URL.createObjectURL(adminFile)}
                       alt="Vista previa"
-                      className="max-h-48 rounded-lg border border-slate-200 object-contain"
+                      className="max-h-48 rounded-lg border border-black/5 object-contain"
                     />
                     <button
                       type="button"
@@ -748,7 +762,7 @@ export default function AdminCartera() {
                       className="absolute top-1.5 right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow transition-colors"
                       title="Quitar imagen"
                     >
-                      ✕
+                      <IconClose className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 )}
@@ -787,17 +801,17 @@ export default function AdminCartera() {
                 <button
                   type="button"
                   onClick={openShare}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-sm hover:shadow-md active:scale-95 transition-all duration-200"
+                  className="bg-blue-600 hover:bg-blue-700 hover:brightness-105 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring"
                 >
                   Reasignar Caso
                 </button>
                 <button
                   type="submit"
                   disabled={sending}
-                  className={`px-5 py-2 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 ${
+                  className={`px-5 py-2 text-white text-sm font-semibold rounded-full shadow-sm active:scale-[0.97] transition-all duration-200 ease-spring disabled:opacity-50 ${
                     nuevoEstado === 'resuelto'
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-blue-600 hover:bg-blue-700'
+                      ? 'bg-green-600 hover:bg-green-700 hover:brightness-105'
+                      : 'bg-blue-600 hover:bg-blue-700 hover:brightness-105'
                   }`}
                 >
                   {sending
@@ -826,9 +840,9 @@ export default function AdminCartera() {
             {busqueda && (
               <button
                 onClick={() => { setBusqueda(''); setPagina(1) }}
-                className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 border border-slate-300 rounded-lg transition-colors"
+                className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700 border border-black/10 rounded-full active:scale-[0.97] transition-all duration-200 ease-spring"
               >
-                ✕
+                <IconClose className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -886,9 +900,9 @@ export default function AdminCartera() {
           ) : casosFiltrados.length === 0 ? (
             <p className="text-slate-400 text-sm text-center py-10">No hay casos con este filtro.</p>
           ) : (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-black/5 rounded-2xl overflow-hidden shadow-sm">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-slate-50 border-b border-black/5">
                   <tr>
                     {['N° Caso', 'Nombre', 'Correo', 'Unidad', 'Tipo de Soporte', 'Atendido por', 'Estado', 'Fecha'].map((h) => (
                       <th
@@ -937,16 +951,16 @@ export default function AdminCartera() {
                     <button
                       onClick={() => { setAnimDir('left'); setPagina((p) => Math.max(1, p - 1)) }}
                       disabled={pagina === 1}
-                      className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 active:scale-95 transition-all"
+                      className="px-3 py-1.5 text-xs font-semibold border border-black/10 rounded-full disabled:opacity-40 hover:bg-slate-50 active:scale-[0.97] transition-all duration-200 ease-spring flex items-center gap-1"
                     >
-                      ← Anterior
+                      <IconChevronLeft className="w-3.5 h-3.5" /> Anterior
                     </button>
                     <button
                       onClick={() => { setAnimDir('right'); setPagina((p) => Math.min(totalPaginas, p + 1)) }}
                       disabled={pagina === totalPaginas}
-                      className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 active:scale-95 transition-all"
+                      className="px-3 py-1.5 text-xs font-semibold border border-black/10 rounded-full disabled:opacity-40 hover:bg-slate-50 active:scale-[0.97] transition-all duration-200 ease-spring flex items-center gap-1"
                     >
-                      Siguiente →
+                      Siguiente <IconChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
