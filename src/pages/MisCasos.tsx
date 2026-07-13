@@ -406,10 +406,10 @@ export default function MisCasos() {
                   <button
                     key={c.id}
                     onClick={() => abrirCaso(c)}
-                    className={`relative w-full text-left rounded-xl border transition-all group overflow-hidden ${
+                    className={`relative w-full text-left rounded-2xl border shadow-[0_1px_1px_rgba(0,0,0,0.03),0_16px_40px_-16px_rgba(0,0,0,0.18)] transition-all duration-200 ease-spring group overflow-hidden hover:-translate-y-1 hover:shadow-[0_2px_2px_rgba(0,0,0,0.04),0_20px_48px_-16px_rgba(0,0,0,0.28)] active:scale-[0.99] ${
                       unread > 0
                         ? 'border-blue-300'
-                        : 'bg-white border-black/5 hover:border-brand-400 hover:shadow-sm'
+                        : 'bg-white border-black/[0.06] hover:border-brand-300'
                     }`}
                   >
                     {/* Fondo azul palpitante para no leídos */}
