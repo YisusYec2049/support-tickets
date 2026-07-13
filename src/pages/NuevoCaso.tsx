@@ -22,6 +22,13 @@ const TIPOS_SOPORTE = [
   'Otros',
 ]
 
+const TIPOS_SOPORTE_SIN_INSCRIPCION = [
+  'Ordenes de Trabajo',
+  'Comprobante de Egreso',
+  'Conciliaciones Bancarias',
+  'Reportes',
+]
+
 interface FormData {
   nombre: string
   tipo_usuario: string
@@ -62,6 +69,7 @@ export default function NuevoCaso() {
   const [file, setFile] = useState<File | null>(null)
   const [attempted, setAttempted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const ocultarInscripcion = TIPOS_SOPORTE_SIN_INSCRIPCION.includes(form.tipo_soporte)
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -72,7 +80,7 @@ export default function NuevoCaso() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setAttempted(true)
-    if (!form.tipo_usuario || !form.tipo_soporte) {
+    if ((!ocultarInscripcion && !form.tipo_usuario) || !form.tipo_soporte) {
       setError('Completa todos los campos obligatorios.')
       return
     }
@@ -206,6 +214,27 @@ export default function NuevoCaso() {
           />
         </div>
 
+        {/* Tipo de soporte */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Tipo de Soporte <span className="text-red-500">*</span>
+          </label>
+          <Select
+            value={form.tipo_soporte}
+            onChange={(v) => setForm((f) => ({
+              ...f,
+              tipo_soporte: v,
+              ...(TIPOS_SOPORTE_SIN_INSCRIPCION.includes(v)
+                ? { tipo_usuario: '', numero_id: '', nombre_inscripcion: '' }
+                : {}),
+            }))}
+            options={TIPOS_SOPORTE.map((t) => ({ value: t, label: t }))}
+            invalid={attempted && !form.tipo_soporte}
+          />
+        </div>
+
+        {!ocultarInscripcion && (
+        <>
         {/* Tipo de inscripción */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -250,19 +279,8 @@ export default function NuevoCaso() {
             className="w-full border border-black/10 bg-slate-50/60 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-400 transition-colors"
           />
         </div>
-
-        {/* Tipo de soporte */}
-        <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Tipo de Soporte <span className="text-red-500">*</span>
-          </label>
-          <Select
-            value={form.tipo_soporte}
-            onChange={(v) => setForm((f) => ({ ...f, tipo_soporte: v }))}
-            options={TIPOS_SOPORTE.map((t) => ({ value: t, label: t }))}
-            invalid={attempted && !form.tipo_soporte}
-          />
-        </div>
+        </>
+        )}
 
         {/* Descripción */}
         <div>
