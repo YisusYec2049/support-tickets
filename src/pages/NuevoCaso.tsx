@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { getUserEmail } from '../lib/userSession'
+import { usePasteImage } from '../lib/pasteImage'
 import { IconClose, IconDocument, IconCheckCircle, IconUpload } from '../components/icons'
 import Select from '../components/Select'
 
@@ -70,6 +71,8 @@ export default function NuevoCaso() {
   const [attempted, setAttempted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const ocultarInscripcion = TIPOS_SOPORTE_SIN_INSCRIPCION.includes(form.tipo_soporte)
+
+  usePasteImage(!casoCreado, setFile)
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -308,7 +311,7 @@ export default function NuevoCaso() {
             className="flex items-center gap-2 w-full border border-black/10 bg-slate-50/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-600 hover:border-brand-400 hover:bg-brand-50/50 transition-colors cursor-pointer"
           >
             <IconUpload className="w-4 h-4 text-slate-400 shrink-0" />
-            <span className="truncate">{file ? file.name : 'Seleccionar archivo...'}</span>
+            <span className="truncate">{file ? file.name : 'Seleccionar archivo o pegar una captura (Ctrl+V)'}</span>
           </label>
           <input
             id="adjunto-nuevo-caso"

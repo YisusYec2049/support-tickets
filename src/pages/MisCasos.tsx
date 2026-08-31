@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
 import FileAttachment from '../components/FileAttachment'
 import { getUserEmail, clearUserEmail } from '../lib/userSession'
+import { usePasteImage } from '../lib/pasteImage'
 import type { CasoSoporte, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
 import MensajeThread from '../components/MensajeThread'
@@ -54,6 +55,8 @@ export default function MisCasos() {
   const replyFormRef = useRef<HTMLFormElement>(null)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
+
+  usePasteImage(!!selectedCaso && selectedCaso.estado !== 'resuelto', setReplyFile)
 
   useEffect(() => {
     if (!correo) {
@@ -333,7 +336,7 @@ export default function MisCasos() {
                   className="flex items-center gap-2 w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm text-slate-600 hover:border-brand-400 hover:bg-brand-50/50 transition-colors cursor-pointer"
                 >
                   <IconUpload className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="truncate">{replyFile ? replyFile.name : 'Adjuntar imagen...'}</span>
+                  <span className="truncate">{replyFile ? replyFile.name : 'Adjuntar imagen o pegar una captura (Ctrl+V)'}</span>
                 </label>
                 <input
                   id="adjunto-reply-user"

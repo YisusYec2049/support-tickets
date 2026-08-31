@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { playNotification } from '../lib/sound'
 import FileAttachment from '../components/FileAttachment'
 import { nombreToEmail } from '../lib/adminAuthCartera'
+import { usePasteImage } from '../lib/pasteImage'
 import PasswordInput from '../components/PasswordInput'
 import type { CasoCartera, MensajeCaso } from '../types'
 import EstadoBadge from '../components/EstadoBadge'
@@ -63,6 +64,8 @@ export default function AdminCartera() {
   const [stepVisible, setStepVisible] = useState(true)
   const [reasignando, setReasignando] = useState(false)
   const [reasignError, setReasignError] = useState<string | null>(null)
+
+  usePasteImage(!!selectedCaso && selectedCaso.estado !== 'resuelto' && !shareMounted, setAdminFile)
 
   function openShare() {
     setAdminDestino('')
@@ -739,7 +742,7 @@ export default function AdminCartera() {
                   className="flex items-center gap-2 w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm text-slate-600 hover:border-brand-400 hover:bg-brand-50/50 transition-colors cursor-pointer"
                 >
                   <IconUpload className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="truncate">{adminFile ? adminFile.name : 'Adjuntar imagen...'}</span>
+                  <span className="truncate">{adminFile ? adminFile.name : 'Adjuntar imagen o pegar una captura (Ctrl+V)'}</span>
                 </label>
                 <input
                   id="adjunto-reply-admin-cartera"
