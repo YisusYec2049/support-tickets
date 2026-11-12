@@ -5,6 +5,7 @@ import { setAdminAuthenticated } from '../lib/adminAuth'
 import { setSuperAdminAuthenticated } from '../lib/superAdminAuth'
 import { nombreToEmail } from '../lib/adminAuthCartera'
 import { Ic, rise } from '../mesa/ui'
+import { FILTRO_KEY } from './Admin'
 
 const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD as string | undefined) ?? ''
 const SUPER_PASSWORD = (import.meta.env.VITE_SUPERADMIN_PASSWORD as string | undefined) ?? ''
@@ -40,6 +41,7 @@ export default function AdminSelector() {
     if (sel === 'fin') {
       if (ADMIN_PASSWORD && password.trim() === ADMIN_PASSWORD.trim()) {
         setAdminAuthenticated()
+        sessionStorage.removeItem(FILTRO_KEY) // al entrar, el panel elige solo la pestaña
         navigate('/admin/financiero')
       } else setErr(true)
       return

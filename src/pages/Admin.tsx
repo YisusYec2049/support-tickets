@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isAdminAuthenticated } from '../lib/adminAuth'
 import type { CasoSoporte } from '../types'
@@ -9,16 +9,17 @@ import { fDate, rel } from '../mesa/formato'
 const POR_PAGINA = 15
 type Filtro = 'pendiente' | 'proceso' | 'resuelto' | 'todos'
 const FILTROS: [Filtro, string][] = [['pendiente', 'Pendientes'], ['proceso', 'En proceso'], ['resuelto', 'Resueltos'], ['todos', 'Todos']]
-const FILTRO_KEY = 'mda-admin-filtro'
+/** Pestaña elegida en esta sesión; se borra al iniciar sesión para que al entrar se elija sola. */
+export const FILTRO_KEY = 'mda-admin-filtro'
 
 /** Panel admin: tabla con filtro por estado y buscador. */
 export default function Admin() {
   const navigate = useNavigate()
   const autenticado = isAdminAuthenticated()
   const { casos, ultimo, loading, error } = useAdminCasos(autenticado)
-  const [filtro, setFiltro] = useState<Filtro>(() => {
+  const [filtro, setFiltro] = useState<Filtro | null>(() => {
     const f = sessionStorage.getItem(FILTRO_KEY) as Filtro | null
-    return f && FILTROS.some(([v]) => v === f) ? f : 'pendiente'
+    return f && FILTROS.some(([v]) => v === f) ? f : null
   })
   const [q, setQ] = useState('')
   const [pagina, setPagina] = useState(1)
@@ -26,6 +27,29 @@ export default function Admin() {
   useEffect(() => {
     if (!autenticado) navigate('/admin', { replace: true })
   }, [autenticado, navigate])
+
+  // Al entrar: Pendientes si hay alguno; si no, En proceso. Al volver de un caso se respeta la pestaña.
+  useEffect(() => {
+    if (loading || filtro) return
+    const f: Filtro = casos.some((c) => c.estado === 'pendiente') ? 'pendiente' : 'proceso'
+    setFiltro(f)
+    sessionStorage.setItem(FILTRO_KEY, f)
+  }, [loading, filtro, casos])
+
+  // Interruptor: el fondo blanco se desliza hasta la pestaña elegida.
+  const segRef = useRef<HTMLDivElement>(null)
+  const [thumb, setThumb] = useState<{ x: number; w: number; animar: boolean } | null>(null)
+  const conteo = FILTROS.map(([v]) => casos.filter((c) => v === 'todos' || c.estado === v).length).join(',')
+  useLayoutEffect(() => {
+    function medir(animar: boolean) {
+      const on = segRef.current?.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')
+      if (on) setThumb((t) => ({ x: on.offsetLeft, w: on.offsetWidth, animar: animar && !!t }))
+    }
+    medir(true)
+    const r = () => medir(false)
+    window.addEventListener('resize', r)
+    return () => window.removeEventListener('resize', r)
+  }, [filtro, conteo])
 
   function elegir(f: Filtro) {
     setFiltro(f)
@@ -57,7 +81,10 @@ export default function Admin() {
 
       <div {...rise(1, 'group')}>
         <div className="toolbar">
-          <div className="seg" role="group" aria-label="Filtrar por estado">
+          <div ref={segRef} className="seg slide" role="group" aria-label="Filtrar por estado">
+            <span className="seg-thumb" aria-hidden="true" style={thumb ? {
+              transform: `translateX(${thumb.x}px)`, width: thumb.w, transition: thumb.animar ? undefined : 'none',
+            } : { opacity: 0 }} />
             {FILTROS.map(([v, l]) => (
               <button key={v} type="button" aria-pressed={filtro === v} onClick={() => elegir(v)}>
                 {l} <span className="n">{cnt(v)}</span>
@@ -74,15 +101,18 @@ export default function Admin() {
 
         {error && <div className="alert">{error}</div>}
 
-        {loading ? (
+        {loading || !filtro ? (
           <div className="loading">Cargando casos…</div>
-        ) : vis.length ? (
+        ) : (
+          // Se vuelve a montar al cambiar de pestaña o de página: las filas entran en cascada.
+          <div key={`${filtro}-${pag}`} className="tw tw-b">
+          {vis.length ? (
           <div className="tablewrap">
             <table>
               <thead><tr><th>N° caso</th><th>Solicitante</th><th>Tipo de soporte</th><th>Estado</th><th>Radicado</th></tr></thead>
               <tbody>
-                {vis.map((c) => (
-                  <tr key={c.id} tabIndex={0} onClick={() => navigate(`/admin/financiero/${c.id}`)}
+                {vis.map((c, i) => (
+                  <tr key={c.id} tabIndex={0} style={{ '--i': i } as React.CSSProperties} onClick={() => navigate(`/admin/financiero/${c.id}`)}
                     onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/admin/financiero/${c.id}`) }}>
                     <td data-c="num"><span className="cn mono">{c.caso_numero}</span></td>
                     <td data-c="who"><div className="who-n">{c.nombre}</div><div className="who-c">{c.correo}</div></td>
@@ -96,6 +126,8 @@ export default function Admin() {
           </div>
         ) : (
           <div className="empty">{texto ? `Ningún caso coincide con “${q}”.` : 'No hay casos en este estado.'}</div>
+          )}
+          </div>
         )}
 
         {paginas > 1 && (
