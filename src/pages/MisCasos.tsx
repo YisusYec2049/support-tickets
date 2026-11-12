@@ -87,17 +87,6 @@ export default function MisCasos() {
           </div>
         )}
 
-        <div className="group">
-          <p className="glabel">Equipo de soporte</p>
-          <button className="v4-admin" onClick={() => navigate('/admin')}>
-            <Ic n="chat" className="v4-aico" />
-            <span className="v4-atxt">
-              <span className="v4-ah">Administración</span>
-              <span className="v4-ap">Atender y responder los casos radicados</span>
-            </span>
-            <Ic n="arrowUR" className="v4-aar" sw={1.8} />
-          </button>
-        </div>
       </div>
     </section>
   )
