@@ -360,7 +360,7 @@
 @media (max-width:640px){.mda .v4-grid{grid-template-columns:minmax(0,1fr)}.mda .v4-band{grid-template-columns:minmax(0,1fr)}}
 
 /* ── Radicar caso · opciones ── */
-.mda .appear{animation:rise .6s var(--ease) both}
+.mda .appear{animation:rise .6s var(--ease) backwards}
 .mda .form.wide .fgroup{transition:opacity .6s var(--ease),filter .6s var(--ease)}
 .mda .form.wide:has(.fgroup:focus-within) .fgroup:not(:focus-within){opacity:.45;filter:saturate(.6)}
 .mda .form.wide .glabel{transition:color .6s var(--ease)}
@@ -396,8 +396,8 @@
 .mda .toast.show{opacity:1;transform:translate(-50%,0)}
 
 /* ── entrada escalonada ── */
-.mda .rise{animation:rise .6s var(--ease) both}
-.mda .ac-sel{animation:rise .5s var(--ease) both}
+.mda .rise{animation:rise .6s var(--ease) backwards}
+.mda .ac-sel{animation:rise .5s var(--ease) backwards}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){
   .mda,.mda *,.mda *::before,.mda *::after{animation:none!important;transition:none!important}
@@ -465,4 +465,4 @@
 .mda .seg.slide button{position:relative;z-index:1}
 .mda .seg.slide button[aria-pressed="true"]{background:transparent;box-shadow:none}
 .mda .seg-thumb{position:absolute;top:3px;bottom:3px;left:0;width:0;border-radius:999px;background:var(--bg);box-shadow:0 1px 2px rgba(29,78,216,.18),0 6px 14px -8px rgba(29,78,216,.45);transition:transform .45s var(--ease),width .45s var(--ease);pointer-events:none}
-.mda .tw-b tbody tr,.mda .tw-b .empty{animation:rise .45s var(--ease) both;animation-delay:calc(var(--i,0) * 40ms)}
+.mda .tw-b tbody tr,.mda .tw-b .empty{animation:rise .45s var(--ease) backwards;animation-delay:calc(var(--i,0) * 40ms)}

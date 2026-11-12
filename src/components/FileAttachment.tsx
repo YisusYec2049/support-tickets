@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { IconClose, IconFileWord, IconFileExcel } from './icons'
 
 interface Props {
@@ -37,7 +38,8 @@ export default function FileAttachment({ url, imageClassName }: Props) {
           onClick={openLightbox}
           className={`cursor-zoom-in ${imageClassName ?? 'max-h-48 rounded-lg border border-black/5 object-contain hover:opacity-90 transition-opacity'}`}
         />
-        {mounted && (
+        {/* Se dibuja en <body>: así cubre toda la ventana aunque un contenedor tenga animación o transform. */}
+        {mounted && createPortal(
           <div
             className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 ease-spring ${visible ? 'bg-black/80' : 'bg-black/0'}`}
             onClick={closeLightbox}
@@ -54,7 +56,8 @@ export default function FileAttachment({ url, imageClassName }: Props) {
             >
               <IconClose className="w-4 h-4" />
             </button>
-          </div>
+          </div>,
+          document.body,
         )}
       </>
     )
