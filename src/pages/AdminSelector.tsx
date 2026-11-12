@@ -6,8 +6,6 @@ import { setSuperAdminAuthenticated } from '../lib/superAdminAuth'
 import { nombreToEmail } from '../lib/adminAuthCartera'
 import { Ic, rise } from '../mesa/ui'
 
-// ⚠️ Financiero y Super Admin siguen comparando contra variables VITE_*, que quedan dentro del
-// JavaScript que descarga el navegador. Cartera ya usa Supabase Auth. Ver Changelog (nov. 2026).
 const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD as string | undefined) ?? ''
 const SUPER_PASSWORD = (import.meta.env.VITE_SUPERADMIN_PASSWORD as string | undefined) ?? ''
 
