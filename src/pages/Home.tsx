@@ -1,59 +1,83 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getUserEmail, setUserEmail } from '../lib/userSession'
-import { IconMail } from '../components/icons'
+import { getLastEmail, setLastEmail } from '../mesa/datos'
+import { Ic, rise } from '../mesa/ui'
 
+/** Ingreso: lo que se hace en la mesa a la izquierda y la ficha para entrar a la derecha. */
 export default function Home() {
-  const [correo, setCorreo] = useState('')
   const navigate = useNavigate()
+  const [correo, setCorreo] = useState('')
+  const ultimo = getLastEmail()
 
   useEffect(() => {
     if (getUserEmail()) navigate('/selector', { replace: true })
   }, [navigate])
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setUserEmail(correo)
+  function entrar(email: string) {
+    setUserEmail(email)
+    setLastEmail(email)
     navigate('/selector')
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-full max-w-sm animate-pop-in">
-        <div className="bg-white rounded-2xl border border-black/[0.06] shadow-[0_1px_1px_rgba(0,0,0,0.03),0_16px_40px_-16px_rgba(0,0,0,0.18)] p-8">
-          <div className="mb-8 flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 shadow-inner shadow-white/20 ring-1 ring-black/5 flex items-center justify-center mb-4">
-              <IconMail className="w-6 h-6 text-white" />
-            </div>
-            <h2 className="text-lg font-semibold text-slate-900">Bienvenido</h2>
-            <p className="text-slate-500 text-sm mt-1">
-              Ingresa tu correo para consultar tus casos.
-            </p>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Correo electrónico
-              </label>
-              <input
-                type="email"
-                value={correo}
-                onChange={(e) => setCorreo(e.target.value)}
-                required
-                autoFocus
-                placeholder="tucorreo@ejemplo.com"
-                className="w-full border border-black/10 bg-slate-50/60 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-500/50 focus:border-brand-400 transition-colors"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-brand-700 hover:bg-brand-800 hover:brightness-105 text-white font-semibold py-2.5 rounded-full shadow-sm transition-all duration-200 ease-spring active:scale-[0.97] text-sm"
-            >
-              Ingresar
-            </button>
-          </form>
+    <section className="page">
+      <div className="in-b">
+        <div {...rise(0, 'group', { gap: 28 })}>
+          <h1 style={{ fontSize: 44, lineHeight: 1.1 }}>Consulta y radica tus casos</h1>
+          <ul className="in-pts">
+            <li><span className="ib"><Ic n="pen" /></span><span><b>Radica un caso</b><span>Reporta un problema o pide un trámite.</span></span></li>
+            <li><span className="ib"><Ic n="chat" /></span><span><b>Conversa con Soporte</b><span>Te respondemos por esta misma mesa.</span></span></li>
+            <li><span className="ib"><Ic n="file" /></span><span><b>Revisa tu historial</b><span>Todos tus casos, abiertos y resueltos.</span></span></li>
+          </ul>
         </div>
+
+        <form {...rise(1, 'in-card')} onSubmit={(e) => { e.preventDefault(); if (correo.trim()) entrar(correo) }}>
+          <p className="glabel">Entrar</p>
+          {ultimo && (
+            <>
+              <button type="button" className="in-me" onClick={() => entrar(ultimo)}>
+                <span className="av">{ultimo.charAt(0).toUpperCase()}</span>
+                <span><b>Continuar como</b><small>{ultimo}</small></span>
+                <Ic n="arrowUR" sw={1.8} style={{ width: 18, height: 18, color: 'var(--b600)' }} />
+              </button>
+              <div className="in-or">o entra con otro correo</div>
+            </>
+          )}
+          <div className="field">
+            <label htmlFor="f-ingreso">Correo electrónico</label>
+            <input
+              id="f-ingreso"
+              type="email"
+              required
+              autoComplete="email"
+              autoFocus={!ultimo}
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              placeholder="tucorreo@ejemplo.com"
+              style={{ fontSize: 16, padding: '14px 16px' }}
+            />
+          </div>
+          <p className="in-hint">Usa el mismo correo con el que radicas tus solicitudes. Ahí verás tus casos y las respuestas de Soporte.</p>
+          <div>
+            <button className={`btn ${ultimo ? 'btn-sec' : 'btn-pri'}`} type="submit">
+              {ultimo ? 'Continuar con este correo' : <>Continuar <Ic n="arrowUR" sw={1.8} /></>}
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+
+      <div {...rise(2, 'group')}>
+        <p className="glabel">Equipo de soporte</p>
+        <button className="v4-admin" onClick={() => navigate('/admin')}>
+          <Ic n="chat" className="v4-aico" />
+          <span className="v4-atxt">
+            <span className="v4-ah">Administración</span>
+            <span className="v4-ap">Atender y responder los casos radicados</span>
+          </span>
+          <Ic n="arrowUR" className="v4-aar" sw={1.8} />
+        </button>
+      </div>
+    </section>
   )
 }

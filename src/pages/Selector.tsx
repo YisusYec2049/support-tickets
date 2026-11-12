@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getUserEmail, clearUserEmail } from '../lib/userSession'
-import { IconBarChart, IconWallet, IconArrowUpRight } from '../components/icons'
+import { getUserEmail } from '../lib/userSession'
+import { Ic, rise } from '../mesa/ui'
 
+/** Elige módulo: dos fichas grandes lado a lado (opción B aprobada 12/11/2026). Compartida con Cartera. */
 export default function Selector() {
   const navigate = useNavigate()
   const correo = getUserEmail()
@@ -12,48 +13,25 @@ export default function Selector() {
   }, [correo, navigate])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh]">
-      <div className="text-center mb-10">
-        <h1 className="text-2xl font-bold text-slate-900">¿Qué módulo necesitas?</h1>
-        <p className="text-slate-500 text-sm mt-2">{correo}</p>
+    <section className="page">
+      <div {...rise(0, 'head-txt')}>
+        <h1>¿Qué módulo necesitas?</h1>
+        <p className="lede">{correo}</p>
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-2xl">
-        <button
-          onClick={() => navigate('/mis-casos')}
-          className="group text-left rounded-2xl border border-black/5 bg-white p-6 shadow-sm transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-gradient-to-br from-sky-400 to-blue-600 shadow-inner shadow-white/20 ring-1 ring-black/5">
-              <IconBarChart className="w-7 h-7 text-white" />
-            </div>
-            <IconArrowUpRight className="w-4 h-4 text-slate-300 transition-colors group-hover:text-brand-600" />
-          </div>
-          <h3 className="mt-4 font-semibold text-slate-900">Soporte Sistema Financiero</h3>
-          <p className="mt-1 text-sm text-slate-500">Inscripciones, comprobantes, acuerdos de pago y más.</p>
+      <div {...rise(1, 'sl-b')}>
+        <button className="sl-card" onClick={() => navigate('/mis-casos')}>
+          <span className="ib"><Ic n="sheet" /></span>
+          <h2>Sistema Financiero</h2>
+          <p>Inscripciones, comprobantes de ingreso y egreso, acuerdos de pago, órdenes de trabajo, conciliaciones, reportes y links de pago.</p>
+          <span className="go">Entrar <Ic n="arrowUR" sw={1.8} /></span>
         </button>
-
-        <button
-          onClick={() => navigate('/cartera/mis-casos')}
-          className="group text-left rounded-2xl border border-black/5 bg-white p-6 shadow-sm transition-all duration-200 ease-spring hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[14px] bg-gradient-to-br from-emerald-400 to-green-600 shadow-inner shadow-white/20 ring-1 ring-black/5">
-              <IconWallet className="w-7 h-7 text-white" />
-            </div>
-            <IconArrowUpRight className="w-4 h-4 text-slate-300 transition-colors group-hover:text-brand-600" />
-          </div>
-          <h3 className="mt-4 font-semibold text-slate-900">Soporte Cartera</h3>
-          <p className="mt-1 text-sm text-slate-500">Cuotas, pagos mal aplicados y cruces de cartera.</p>
+        <button className="sl-card" onClick={() => navigate('/cartera/mis-casos')}>
+          <span className="ib"><Ic n="file" /></span>
+          <h2>Cartera</h2>
+          <p>Fechas y valores de cuotas, pagos mal aplicados o cruzados con otro cliente.</p>
+          <span className="go">Entrar <Ic n="arrowUR" sw={1.8} /></span>
         </button>
       </div>
-
-      <button
-        onClick={() => { clearUserEmail(); navigate('/') }}
-        className="mt-10 text-sm text-slate-400 hover:text-slate-600 transition-colors"
-      >
-        Cambiar correo
-      </button>
-    </div>
+    </section>
   )
 }
