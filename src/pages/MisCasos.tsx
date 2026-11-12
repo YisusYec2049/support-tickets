@@ -4,12 +4,13 @@ import { getUserEmail } from '../lib/userSession'
 import { useCasosUsuario, ordenar, esCaliente, type CasoConResumen } from '../mesa/useCasosUsuario'
 import { Badge, Ic, NewTag, rise } from '../mesa/ui'
 import { fDate } from '../mesa/formato'
+import { FIN, type Modulo } from '../mesa/modulos'
 
 /** Inicio del usuario: Radicar caso arriba, sus casos abiertos en fichas y los resueltos al lado. */
-export default function MisCasos() {
+export default function MisCasos({ mod = FIN }: { mod?: Modulo }) {
   const navigate = useNavigate()
   const correo = getUserEmail() ?? ''
-  const { casos, loading, error } = useCasosUsuario(correo)
+  const { casos, loading, error } = useCasosUsuario(correo, mod)
 
   useEffect(() => {
     if (!correo) navigate('/', { replace: true })
@@ -26,14 +27,16 @@ export default function MisCasos() {
     const hot = esCaliente(c)
     const resp = hot ? c.ultimoAdmin : null
     return (
-      <button key={c.id} className={`v4-card ${hot ? 'hot' : ''}`} onClick={() => navigate(`/mis-casos/${c.id}`)}>
+      <button key={c.id} className={`v4-card ${hot ? 'hot' : ''}`} onClick={() => navigate(`${mod.base}/${c.id}`)}>
         <span className="v4-top">
           <span className="mono v4-n">{c.caso_numero}</span>
-          {resp && <span className="v4-dt num">{fDate(resp.created_at)}</span>}
+          {resp
+            ? <span className="v4-dt num">{fDate(resp.created_at)}</span>
+            : c.unidad_negocio && <span className="unit">{c.unidad_negocio}</span>}
         </span>
         <span className="v4-t">{c.tipo_soporte}</span>
         {resp
-          ? <span className="v4-reply"><b>Soporte:</b> {resp.mensaje}</span>
+          ? <span className="v4-reply"><b>{mod.corto}:</b> {resp.mensaje}</span>
           : <span className="v4-d">{c.descripcion}</span>}
         <span className="v4-foot">
           {hot ? <NewTag>Nueva respuesta</NewTag> : <Badge estado={c.estado} />}
@@ -47,11 +50,11 @@ export default function MisCasos() {
     <section className="page">
       <h1 {...rise(0)}>¿En qué te ayudamos?</h1>
       <div {...rise(1, `stage-v4 page ${hayCaliente ? 'hot-b' : ''}`, { gap: 32 })}>
-        <a className="v4-band" href="/nuevo-caso" onClick={(e) => { e.preventDefault(); navigate('/nuevo-caso') }}>
+        <a className="v4-band" href={mod.nuevo} onClick={(e) => { e.preventDefault(); navigate(mod.nuevo) }}>
           <span className="v4-bi"><Ic n="pen" className="v4-ico" /></span>
           <span className="v4-btxt">
             <span className="v4-bh">Radicar caso</span>
-            <span className="v4-bp">Reportar un problema o pedir un trámite. Te respondemos por esta misma mesa.</span>
+            <span className="v4-bp">{mod.banda}</span>
           </span>
           <span className="btn btn-pri">Empezar <Ic n="arrowUR" sw={1.8} /></span>
         </a>
@@ -71,11 +74,11 @@ export default function MisCasos() {
             <div className="v4-hist">
               <div className="glabel-row">
                 <p className="glabel">Resueltos <span className="count">{resueltos.length}</span></p>
-                {casos.length > 0 && <button className="linkbtn" onClick={() => navigate('/mis-casos/todos')}>Ver todos</button>}
+                {casos.length > 0 && <button className="linkbtn" onClick={() => navigate(`${mod.base}/todos`)}>Ver todos</button>}
               </div>
               <div className="v4-hrows">
                 {resueltos.slice(0, 3).map((c) => (
-                  <button key={c.id} className="v4-hrow" onClick={() => navigate(`/mis-casos/${c.id}`)}>
+                  <button key={c.id} className="v4-hrow" onClick={() => navigate(`${mod.base}/${c.id}`)}>
                     <span className="mono v4-n">{c.caso_numero}</span>
                     <span className="v4-ht">{c.tipo_soporte}</span>
                     <span className="v4-dt num">{fDate(c.updated_at)}</span>

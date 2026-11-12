@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isAdminAuthenticated } from '../lib/adminAuth'
 import type { CasoSoporte } from '../types'
 import { useAdminCasos, respondioUsuario } from '../mesa/useAdminCasos'
-import { Badge, Ic, NewTag, rise } from '../mesa/ui'
+import { Badge, Ic, NewTag, SlideSeg, rise } from '../mesa/ui'
 import { fDate, rel } from '../mesa/formato'
 
 const POR_PAGINA = 15
@@ -36,21 +36,6 @@ export default function Admin() {
     sessionStorage.setItem(FILTRO_KEY, f)
   }, [loading, filtro, casos])
 
-  // Interruptor: el fondo blanco se desliza hasta la pestaña elegida.
-  const segRef = useRef<HTMLDivElement>(null)
-  const [thumb, setThumb] = useState<{ x: number; w: number; animar: boolean } | null>(null)
-  const conteo = FILTROS.map(([v]) => casos.filter((c) => v === 'todos' || c.estado === v).length).join(',')
-  useLayoutEffect(() => {
-    function medir(animar: boolean) {
-      const on = segRef.current?.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')
-      if (on) setThumb((t) => ({ x: on.offsetLeft, w: on.offsetWidth, animar: animar && !!t }))
-    }
-    medir(true)
-    const r = () => medir(false)
-    window.addEventListener('resize', r)
-    return () => window.removeEventListener('resize', r)
-  }, [filtro, conteo])
-
   function elegir(f: Filtro) {
     setFiltro(f)
     setPagina(1)
@@ -81,16 +66,8 @@ export default function Admin() {
 
       <div {...rise(1, 'group')}>
         <div className="toolbar">
-          <div ref={segRef} className="seg slide" role="group" aria-label="Filtrar por estado">
-            <span className="seg-thumb" aria-hidden="true" style={thumb ? {
-              transform: `translateX(${thumb.x}px)`, width: thumb.w, transition: thumb.animar ? undefined : 'none',
-            } : { opacity: 0 }} />
-            {FILTROS.map(([v, l]) => (
-              <button key={v} type="button" aria-pressed={filtro === v} onClick={() => elegir(v)}>
-                {l} <span className="n">{cnt(v)}</span>
-              </button>
-            ))}
-          </div>
+          <SlideSeg label="Filtrar por estado" valor={filtro} onChange={elegir}
+            opciones={FILTROS.map(([v, l]) => ({ v, l, n: cnt(v) }))} />
           <label className="search">
             <Ic n="search" />
             <span className="sr">Buscar</span>

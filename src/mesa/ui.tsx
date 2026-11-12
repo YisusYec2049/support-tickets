@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { MensajeCaso } from '../types'
@@ -220,4 +220,49 @@ export function useToast() {
   useEffect(() => () => window.clearTimeout(t.current), [])
   const node = <div className={`toast ${msg ? 'show' : ''}`} role="status" aria-live="polite">{msg}</div>
   return { show, node }
+}
+
+/* ───────── interruptor deslizante ───────── */
+interface SlideSegProps<T extends string> {
+  opciones: { v: T; l: string; n?: number }[]
+  valor: T | null
+  onChange: (v: T) => void
+  label: string
+}
+
+/** Segmentado cuyo fondo blanco se desliza hasta la opción elegida. */
+export function SlideSeg<T extends string>({ opciones, valor, onChange, label }: SlideSegProps<T>) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [thumb, setThumb] = useState<{ x: number; w: number; animar: boolean } | null>(null)
+  const firma = opciones.map((o) => `${o.v}:${o.n ?? ''}`).join(',')
+  useLayoutEffect(() => {
+    function medir(animar: boolean) {
+      const on = ref.current?.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')
+      if (on) setThumb((t) => ({ x: on.offsetLeft, w: on.offsetWidth, animar: animar && !!t }))
+    }
+    medir(true)
+    const r = () => medir(false)
+    window.addEventListener('resize', r)
+    return () => window.removeEventListener('resize', r)
+  }, [valor, firma])
+  return (
+    <div ref={ref} className="seg slide" role="group" aria-label={label}>
+      <span className="seg-thumb" aria-hidden="true" style={thumb
+        ? { transform: `translateX(${thumb.x}px)`, width: thumb.w, transition: thumb.animar ? undefined : 'none' }
+        : { opacity: 0 }} />
+      {opciones.map((o) => (
+        <button key={o.v} type="button" aria-pressed={valor === o.v} onClick={() => valor !== o.v && onChange(o.v)}>
+          {o.l}{o.n !== undefined && <> <span className="n">{o.n}</span></>}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Quién atiende un caso de Cartera: iniciales, o "Tú" si es la persona en sesión. */
+export function Quien({ nombre, yo }: { nombre?: string | null; yo?: string | null }) {
+  if (!nombre) return <span className="who-none">Sin asignar</span>
+  const ini = nombre.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+  const mio = !!yo && nombre === yo
+  return <span className="who-tag"><span className={`who-av ${mio ? 'me' : ''}`}>{ini}</span>{mio ? 'Tú' : nombre}</span>
 }

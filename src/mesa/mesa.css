@@ -466,3 +466,30 @@
 .mda .seg.slide button[aria-pressed="true"]{background:transparent;box-shadow:none}
 .mda .seg-thumb{position:absolute;top:3px;bottom:3px;left:0;width:0;border-radius:999px;background:var(--bg);box-shadow:0 1px 2px rgba(29,78,216,.18),0 6px 14px -8px rgba(29,78,216,.45);transition:transform .45s var(--ease),width .45s var(--ease);pointer-events:none}
 .mda .tw-b tbody tr,.mda .tw-b .empty{animation:rise .45s var(--ease) backwards;animation-delay:calc(var(--i,0) * 40ms)}
+
+/* ── Cartera (aprobado 12/11/2026): responsable, unidad, aviso de reasignación, ventana ── */
+.mda .ca-q-row .s>:last-child{white-space:nowrap;flex:none}
+.mda .car-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mda .who-tag{display:inline-flex;align-items:center;gap:8px;font-size:14px}
+.mda .who-av{width:26px;height:26px;border-radius:50%;background:var(--b100);color:var(--b700);display:grid;place-items:center;font-size:11.5px;font-weight:600;flex:none}
+.mda .who-av.me{background:var(--b600);color:#fff}
+.mda .who-none{color:var(--note);font-size:13.5px}
+.mda .unit{font-size:12.5px;color:var(--text2)}
+.mda .unit-tag{display:inline-flex;align-items:center;font-size:12.5px;font-weight:500;color:var(--b700);background:var(--bg);border:1px solid var(--b200);border-radius:999px;padding:3px 10px}
+.mda .car-banner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:14px 18px;border-radius:16px;background:var(--b50);border:1px solid var(--b300);color:var(--b900);animation:rise .6s var(--ease) backwards}
+.mda .car-banner .ib{width:32px;height:32px;border-radius:50%;background:var(--b600);color:#fff;display:grid;place-items:center}
+.mda .car-banner .ib svg{width:16px;height:16px}
+.mda .car-banner b{font-weight:600}
+.mda tbody tr.recien{background:var(--b50)}
+.mda .cc-resp{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 18px;border-radius:16px;background:var(--bg);border:1px solid var(--b200)}
+.mda .cc-resp .who-av{width:34px;height:34px;font-size:13px}
+.mda .cc-resp b{font-weight:600}
+.mda .cc-resp small{display:block;font-size:12.5px;color:var(--note)}
+.mda .cc-list{display:flex;flex-direction:column;gap:6px}
+.mda .cc-list button{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;border:1px solid transparent;background:var(--card);text-align:left;color:var(--b900);font-size:14px;transition:border-color .5s var(--ease)}
+.mda .cc-list button:hover{border-color:var(--b300)}
+.mda .modal-bg{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(23,37,84,.35);animation:mdaFade .3s var(--ease) both;padding:16px}
+@keyframes mdaFade{from{opacity:0}to{opacity:1}}
+.mda .modal{width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;padding:24px;border-radius:22px;background:var(--bg);border:1px solid var(--b200);box-shadow:0 30px 70px -30px rgba(23,37,84,.6);animation:pop .45s var(--ease) both}
+.mda .modal h2{margin:0;font-size:20px;letter-spacing:-.02em}
+.mda .modal p{margin:0;color:var(--text2);font-size:14.5px}

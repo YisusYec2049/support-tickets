@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { setAdminAuthenticated } from '../lib/adminAuth'
 import { setSuperAdminAuthenticated } from '../lib/superAdminAuth'
 import { nombreToEmail } from '../lib/adminAuthCartera'
 import { Ic, rise } from '../mesa/ui'
 import { FILTRO_KEY } from './Admin'
+import { FILTRO_CARTERA_KEY } from './AdminCartera'
 
 const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD as string | undefined) ?? ''
 const SUPER_PASSWORD = (import.meta.env.VITE_SUPERADMIN_PASSWORD as string | undefined) ?? ''
@@ -20,7 +21,8 @@ const MODS: Record<Mod, { n: string; d: string; i: string; nota: string }> = {
 /** Acceso administrativo: el módulo elegido con su acceso ahí mismo; los otros dos, a la vista al lado. */
 export default function AdminSelector() {
   const navigate = useNavigate()
-  const [sel, setSel] = useState<Mod>('fin')
+  const location = useLocation()
+  const [sel, setSel] = useState<Mod>(() => ((location.state as { mod?: Mod } | null)?.mod === 'car' ? 'car' : 'fin'))
   const [nombre, setNombre] = useState('')
   const [password, setPassword] = useState('')
   const [ver, setVer] = useState(false)
@@ -57,7 +59,7 @@ export default function AdminSelector() {
     const { data, error } = await supabase.auth.signInWithPassword({ email: nombreToEmail(nombre), password: password.trim() })
     setCargando(false)
     if (error || !data.session) setErr(true)
-    else navigate('/admin/cartera')
+    else { sessionStorage.removeItem(FILTRO_CARTERA_KEY); navigate('/admin/cartera') }
   }
 
   return (

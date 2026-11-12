@@ -8,6 +8,7 @@ import { subirAdjunto } from '../mesa/datos'
 import { Back, Badge, Ic, rise, useToast } from '../mesa/ui'
 import { fDate } from '../mesa/formato'
 import { ID_LABEL, SIN_ID, SIN_INSCRIPCION, TIPOS_SOPORTE } from '../mesa/constantes'
+import { FIN, type Caso, type Modulo } from '../mesa/modulos'
 
 interface Form {
   nombre: string
@@ -240,8 +241,8 @@ function Campo({ k, label, ph, value, onChange, bad, type = 'text', auto }: {
 }
 
 /** Confirmación: la ficha tal como saldrá en Inicio y, al lado, qué sigue. */
-function Confirmacion({ caso, onCopiar, onOtro, toast }: {
-  caso: CasoSoporte; onCopiar: () => void; onOtro: () => void; toast: React.ReactNode
+export function Confirmacion({ caso, onCopiar, onOtro, toast, mod = FIN }: {
+  caso: Caso; onCopiar: () => void; onOtro: () => void; toast: React.ReactNode; mod?: Modulo
 }) {
   const navigate = useNavigate()
   const fecha = useMemo(() => fDate(caso.created_at), [caso.created_at])
@@ -258,7 +259,7 @@ function Confirmacion({ caso, onCopiar, onOtro, toast }: {
         <div className="group" style={{ gap: 14 }}>
           <p className="glabel">Tu caso</p>
           <div className="v4-card just">
-            <span className="v4-top"><span className="mono v4-n">{caso.caso_numero}</span><span className="v4-dt">Ahora</span></span>
+            <span className="v4-top"><span className="mono v4-n">{caso.caso_numero}</span><span className="v4-dt">{caso.unidad_negocio ?? 'Ahora'}</span></span>
             <span className="v4-t">{caso.tipo_soporte}</span>
             <span className="v4-d">{caso.descripcion}</span>
             <span className="v4-foot"><Badge estado="pendiente" /><span className="v4-dt num">{fecha}</span></span>
@@ -269,14 +270,14 @@ function Confirmacion({ caso, onCopiar, onOtro, toast }: {
           <p className="glabel">Qué sigue</p>
           <div className="dn-next">
             <ol className="dn-steps">
-              <li><span className="dn-m dn-ok"><Ic n="check" sw={2.4} /></span><span><b>Radicado</b><span>Soporte ya lo tiene en su lista.</span></span></li>
-              <li><span className="dn-m">2</span><span><b>Soporte lo revisa</b><span>Pasa a “En proceso” cuando lo abren.</span></span></li>
+              <li><span className="dn-m dn-ok"><Ic n="check" sw={2.4} /></span><span><b>Radicado</b><span>{mod.sigue[0]}</span></span></li>
+              <li><span className="dn-m">2</span><span><b>{mod.sigue[1]}</b><span>{mod.sigue[2]}</span></span></li>
               <li><span className="dn-m">3</span><span><b>Te responde aquí</b><span>La ficha en tu inicio se mueve para avisarte.</span></span></li>
             </ol>
             <div className="dn-links">
-              <button className="btn btn-pri" onClick={() => navigate(`/mis-casos/${caso.id}`)}>Ver mi caso <Ic n="arrowUR" sw={1.8} /></button>
+              <button className="btn btn-pri" onClick={() => navigate(`${mod.base}/${caso.id}`)}>Ver mi caso <Ic n="arrowUR" sw={1.8} /></button>
               <button className="btn btn-sec" onClick={onOtro}>Radicar otro</button>
-              <button className="btn btn-sec" onClick={() => navigate('/mis-casos')}>Ir al inicio</button>
+              <button className="btn btn-sec" onClick={() => navigate(mod.base)}>Ir al inicio</button>
             </div>
           </div>
         </div>

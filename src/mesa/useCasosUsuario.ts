@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { CasoSoporte } from '../types'
+import type { Caso, Modulo } from './modulos'
+import { FIN } from './modulos'
 import { getLastSeen } from './datos'
 
 export interface MsgResumen {
@@ -10,7 +11,7 @@ export interface MsgResumen {
   created_at: string
 }
 
-export interface CasoConResumen extends CasoSoporte {
+export type CasoConResumen = Caso & {
   /** Mensajes de Soporte que esta persona no ha visto en este navegador. */
   noLeidos: number
   ultimo: MsgResumen | null
@@ -21,7 +22,7 @@ export interface CasoConResumen extends CasoSoporte {
 export const esCaliente = (c: CasoConResumen) => c.noLeidos > 0 && c.estado !== 'resuelto'
 
 /** Casos del correo en sesión, con su último mensaje y cuántas respuestas no ha visto. */
-export function useCasosUsuario(correo: string) {
+export function useCasosUsuario(correo: string, mod: Modulo = FIN) {
   const [casos, setCasos] = useState<CasoConResumen[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -32,17 +33,17 @@ export function useCasosUsuario(correo: string) {
     setError(null)
     try {
       const { data, error: err } = await supabase
-        .from('casos_soporte')
+        .from(mod.casos)
         .select('*')
         .eq('correo', correo)
         .order('created_at', { ascending: false })
       if (err) throw err
-      const lista = (data ?? []) as CasoSoporte[]
+      const lista = (data ?? []) as Caso[]
 
       let msgs: MsgResumen[] = []
       if (lista.length) {
         const { data: m, error: mErr } = await supabase
-          .from('mensajes_casos')
+          .from(mod.mensajes)
           .select('caso_id, autor, mensaje, created_at')
           .in('caso_id', lista.map((c) => c.id))
           .order('created_at', { ascending: true })
@@ -68,7 +69,7 @@ export function useCasosUsuario(correo: string) {
     } finally {
       setLoading(false)
     }
-  }, [correo])
+  }, [correo, mod])
 
   useEffect(() => { cargar() }, [cargar])
 
