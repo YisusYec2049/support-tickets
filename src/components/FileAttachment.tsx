@@ -68,7 +68,11 @@ export default function FileAttachment({ url, imageClassName }: Props) {
   }
 
   const isWord = ['doc', 'docx'].includes(ext)
-  const googleViewUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}`
+  // Visor de Office Online: abre .docx/.xlsx desde una URL pública. El de Google (docs.google.com/viewer)
+  // fallaba casi siempre con "No se ha podido previsualizar el archivo".
+  const viewUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`
+  // `download` no funciona en enlaces de otro dominio; Supabase sí obliga la descarga con ?download.
+  const downloadUrl = `${url}${url.includes('?') ? '&' : '?'}download`
   const label = isWord ? 'Documento Word' : 'Hoja de cálculo Excel'
 
   return (
@@ -79,7 +83,7 @@ export default function FileAttachment({ url, imageClassName }: Props) {
       <span className="flex-1 text-sm text-slate-700 font-medium">{label}</span>
       <div className="flex items-center gap-1">
         <a
-          href={googleViewUrl}
+          href={viewUrl}
           target="_blank"
           rel="noopener noreferrer"
           title="Ver archivo"
@@ -91,8 +95,7 @@ export default function FileAttachment({ url, imageClassName }: Props) {
           </svg>
         </a>
         <a
-          href={url}
-          download
+          href={downloadUrl}
           title="Descargar archivo"
           className="p-1.5 text-slate-500 hover:text-brand-700 hover:bg-brand-50 rounded-full active:scale-[0.93] transition-all duration-200 ease-spring"
         >
